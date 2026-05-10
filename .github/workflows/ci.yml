@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout markdsl (file: dep)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/markdsl
+          path: ../markdsl
+
+      - name: Install pandoc
+        # texdown's renderer shells out to pandoc -t latex; ubuntu-latest
+        # ships pandoc 3.x which is what the writer targets.
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Pandoc version (sanity)
+        run: pandoc --version | head -1
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun test
