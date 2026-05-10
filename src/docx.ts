@@ -296,15 +296,22 @@ async function getDefaultReferenceDoc(
   return out;
 }
 
-/** Patch the Normal style's <w:rPr> (run properties) and <w:pPr>
- *  (paragraph properties) so the requested font + size become the
- *  cascade root. docx font sizes are in half-points (so 11pt = 22). */
+/** Patch `<w:docDefaults><w:rPrDefault><w:rPr>` so the requested
+ *  font + size become the document-wide cascade root. Word's font
+ *  resolution starts here — it's the closest analogue to CSS's
+ *  `:root` styling. Pandoc's reference.docx defaults to a theme
+ *  font reference (`asciiTheme="minorHAnsi"` resolving to Aptos /
+ *  Calibri) and 12pt (sz="24" half-points); we replace both with
+ *  explicit values so the cascade is deterministic regardless of
+ *  the consumer's installed theme.
+ *
+ *  Note: Word ignores `w:rFonts` at this level if any `theme`
+ *  attribute is also present, so we replace the entire element
+ *  rather than just adding our own attrs. */
 function patchNormalStyle(
   stylesXml: string,
   style: DocStyle,
 ): string {
-  // Build the rFonts + sz fragments to inject. ascii / hAnsi / cs /
-  // eastAsia all set so the font wins on every script class.
   const fontFrag = style.font
     ? `<w:rFonts w:ascii="${escapeXml(style.font)}" w:hAnsi="${escapeXml(style.font)}" w:cs="${escapeXml(style.font)}" w:eastAsia="${escapeXml(style.font)}"/>`
     : '';
@@ -312,35 +319,25 @@ function patchNormalStyle(
   const szFrag = halfPt !== null
     ? `<w:sz w:val="${halfPt}"/><w:szCs w:val="${halfPt}"/>`
     : '';
-  const inject = `${fontFrag}${szFrag}`;
-  if (!inject) return stylesXml;
+  if (!fontFrag && !szFrag) return stylesXml;
 
-  // Find the Normal style's run properties block and replace it.
-  // Pandoc's reference.docx has `<w:style w:styleId="Normal" ...>`
-  // with a `<w:rPr>...</w:rPr>` inside. Replace the rFonts and sz
-  // children if present, otherwise inject before the closing tag.
   return stylesXml.replace(
-    /(<w:style\b[^>]*\bw:styleId="Normal"[\s\S]*?<w:rPr>)([\s\S]*?)(<\/w:rPr>)/,
+    /(<w:rPrDefault>\s*<w:rPr>)([\s\S]*?)(<\/w:rPr>\s*<\/w:rPrDefault>)/,
     (_full, open: string, inner: string, close: string) => {
       let body = inner;
-      if (style.font) {
-        if (/<w:rFonts\b[^/]*\/>/.test(body)) {
-          body = body.replace(/<w:rFonts\b[^/]*\/>/, fontFrag);
-        } else {
-          body = fontFrag + body;
-        }
+      if (fontFrag) {
+        // Replace any existing rFonts (theme-based or explicit).
+        body = /<w:rFonts\b[^/]*\/>/.test(body)
+          ? body.replace(/<w:rFonts\b[^/]*\/>/, fontFrag)
+          : fontFrag + body;
       }
       if (halfPt !== null) {
-        if (/<w:sz\b[^/]*\/>/.test(body)) {
-          body = body.replace(/<w:sz\b[^/]*\/>/, `<w:sz w:val="${halfPt}"/>`);
-        } else {
-          body += `<w:sz w:val="${halfPt}"/>`;
-        }
-        if (/<w:szCs\b[^/]*\/>/.test(body)) {
-          body = body.replace(/<w:szCs\b[^/]*\/>/, `<w:szCs w:val="${halfPt}"/>`);
-        } else {
-          body += `<w:szCs w:val="${halfPt}"/>`;
-        }
+        body = /<w:sz\b[^/]*\/>/.test(body)
+          ? body.replace(/<w:sz\b[^/]*\/>/, `<w:sz w:val="${halfPt}"/>`)
+          : body + `<w:sz w:val="${halfPt}"/>`;
+        body = /<w:szCs\b[^/]*\/>/.test(body)
+          ? body.replace(/<w:szCs\b[^/]*\/>/, `<w:szCs w:val="${halfPt}"/>`)
+          : body + `<w:szCs w:val="${halfPt}"/>`;
       }
       return open + body + close;
     },
