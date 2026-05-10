@@ -9,10 +9,10 @@
         "@types/js-yaml": "^4.0.9",
         "@types/node": "^25.6.2",
         "js-yaml": "^4.1.1",
-        "markdsl": "^0.0.2",
+        "markdsl": "^0.0.4",
       },
       "peerDependencies": {
-        "markdsl": "^0.0.2",
+        "markdsl": "^0.0.4",
         "typescript": "^5",
       },
       "optionalPeers": [
@@ -49,7 +49,7 @@
 
     "lie": ["lie@3.3.0", "", { "dependencies": { "immediate": "~3.0.5" } }, "sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ=="],
 
-    "markdsl": ["markdsl@0.0.2", "", { "dependencies": { "docx": "^9.6.1", "jszip": "^3.10.1" }, "peerDependencies": { "pandoc-wasm": "^1.0.1", "typescript": "^5" }, "optionalPeers": ["pandoc-wasm"] }, "sha512-TnWchtPb7xGbqzdhHRH8y03PivnywnX2/RGrVS2V6aVpnvQpaoOfFE5JCwKW9B0vx4u7OyZMBeld73aQaVIygg=="],
+    "markdsl": ["markdsl@0.0.4", "", { "dependencies": { "docx": "^9.6.1", "jszip": "^3.10.1" }, "peerDependencies": { "pandoc-wasm": "^1.0.1", "typescript": "^5" }, "optionalPeers": ["pandoc-wasm"] }, "sha512-V9N+27jsfJtQQnUKgfqYNM96vuXh8HqhklxKEGQ3b2c1BqcjK8glT/w8gvg9c+ViC9Sil4RWF3wyfRWGXqm+QQ=="],
 
     "minimalistic-assert": ["minimalistic-assert@1.0.1", "", {}, "sha512-UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A=="],
 

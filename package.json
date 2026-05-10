@@ -36,11 +36,11 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.6.2",
     "js-yaml": "^4.1.1",
-    "markdsl": "^0.0.2"
+    "markdsl": "^0.0.4"
   },
   "peerDependencies": {
     "typescript": "^5",
-    "markdsl": "^0.0.2"
+    "markdsl": "^0.0.4"
   },
   "peerDependenciesMeta": {
     "markdsl": {
