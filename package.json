@@ -4,28 +4,40 @@
   "type": "module",
   "license": "MIT",
   "author": "Evolving Programs",
-  "private": true,
-  "main": "src/index.ts",
+  "main": "dist/texdown.js",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./*": "./src/*/index.ts"
   },
+  "bin": {
+    "texdown": "dist/texdown.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EvolvingPrograms/texdown.git"
+  },
   "scripts": {
     "typecheck": "tsc -p .",
-    "test": "bun test"
+    "test": "bun test",
+    "build": "bun build scripts/texdown.ts --target=node --minify --outfile=dist/texdown.js && chmod +x dist/texdown.js",
+    "pack": "bun run build && zip -FSqr plugin.zip dist examples README.md SKILL.md package.json"
   },
   "files": [
+    "dist/",
     "src/",
-    "templates/"
+    "examples/",
+    "README.md",
+    "SKILL.md"
   ],
   "dependencies": {
     "markdsl": "^0.0.2"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.3.13",
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.6.2",
     "js-yaml": "^4.1.1"
   },
   "peerDependencies": {

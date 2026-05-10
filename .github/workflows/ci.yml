@@ -5,6 +5,7 @@ on:
     branches: [master, main]
   pull_request:
 
+# Cancel a previous run if a new commit lands while the prior is in flight.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -14,18 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Checkout markdsl (file: dep)
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/markdsl
-          path: ../markdsl
 
       - name: Install pandoc
         # texdown's renderer shells out to pandoc -t latex; ubuntu-latest
-        # ships pandoc 3.x which is what the writer targets.
+        # ships pandoc 3.x.
         run: sudo apt-get update && sudo apt-get install -y pandoc
 
       - name: Pandoc version (sanity)
@@ -43,3 +36,70 @@ jobs:
 
       - name: Test
         run: bun test
+
+      - name: Build CLI bundle (sanity)
+        run: bun run build
+
+  publish:
+    # Publish only on direct pushes to main — never from PRs. Requires
+    # npm trusted-publisher access on this workflow.
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write     # OIDC for npm trusted publishing
+      contents: write     # push the post-publish version bump
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          # No `registry-url` — that injects NODE_AUTH_TOKEN, which
+          # shadows npm's built-in OIDC trusted-publisher detection.
+
+      - name: Use npm ≥11.5 for trusted-publisher OIDC
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build CLI bundle for the published artifact
+        run: bun run build
+
+      - name: Check if current version is already published
+        id: check
+        run: |
+          PKG_NAME=$(jq -r .name package.json)
+          PKG_VERSION=$(jq -r .version package.json)
+          echo "name=$PKG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          if PUBLISHED=$(npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null) && [ -n "$PUBLISHED" ]; then
+            echo "Version ${PKG_VERSION} is already published — skipping."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version ${PKG_VERSION} is new — will publish."
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm (trusted publisher)
+        if: steps.check.outputs.should_publish == 'true'
+        run: npm publish --provenance --access public
+
+      - name: Bump patch version for next release
+        if: steps.check.outputs.should_publish == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm version patch --no-git-tag-version
+          NEW=$(jq -r .version package.json)
+          git add package.json bun.lock
+          git commit -m "chore: bump version to ${NEW} [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
