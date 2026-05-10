@@ -16,6 +16,7 @@ import { splitFrontMatter } from 'markdsl';
 
 import { copyAssetsTo } from './assets';
 import { referencesToBibtex } from './bibtex';
+import { longtableToTable } from './longtable-fix';
 import { runPandocLatex } from './pandoc';
 import { builtInTemplates } from './templates';
 import type { TexFrontMatter, TexTemplate } from './types';
@@ -69,7 +70,11 @@ export function renderTex(srcText: string, opts: RenderTexOptions = {}): string 
     // `\\bibliography{<file>}` like a hand-written .bib.
     meta.bibliography = bibFile;
   }
-  const bodyTex = runPandocLatex(body, { bibFile });
+  // Pandoc's LaTeX writer always emits longtable for tables, which
+  // doesn't render inside a twocolumn column — convert to
+  // table+tabular so pipe-table syntax in markdown works in our
+  // arxiv layout.
+  const bodyTex = longtableToTable(runPandocLatex(body, { bibFile }));
 
   // Abstract handling: if it's a string, treat as plain prose. If
   // markdown formatting matters, the author can wrap with `*emph*`
