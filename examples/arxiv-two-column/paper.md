@@ -6,7 +6,6 @@ authors:
   - name: Brenhin Keller
     affiliation: Dartmouth College
     email: bkeller@university.edu
-    orcid: 0000-0000-0000-0001
     is_corresponding: true
 keywords: [keyword1, keyword2, keyword3]
 abstract: >

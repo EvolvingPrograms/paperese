@@ -28,6 +28,7 @@
     "dist/",
     "src/",
     "examples/",
+    "assets/",
     "README.md",
     "SKILL.md"
   ],

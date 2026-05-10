@@ -9,9 +9,11 @@
 //   5. optionally writeFileSync to `output`
 
 import fs from 'node:fs';
+import path from 'node:path';
 
 import { splitFrontMatter } from 'markdsl';
 
+import { copyAssetsTo } from './assets';
 import { runPandocLatex } from './pandoc';
 import { builtInTemplates } from './templates';
 import type { TexFrontMatter, TexTemplate } from './types';
@@ -62,7 +64,13 @@ export function renderTex(srcText: string, opts: RenderTexOptions = {}): string 
   const tex = template({ meta, body: bodyTex, abstract: abstractTex });
 
   const output = opts.output ?? meta.output;
-  if (output) fs.writeFileSync(output, tex);
+  if (output) {
+    fs.writeFileSync(output, tex);
+    // Plant any bundled assets the template references next to the
+    // .tex so `pdflatex paper.tex` picks them up via plain
+    // `\includegraphics{<name>}` without absolute paths.
+    copyAssetsTo(path.dirname(output), ['orcid.png']);
+  }
   return tex;
 }
 

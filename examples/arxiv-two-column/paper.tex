@@ -13,26 +13,13 @@
 \usepackage{lineno}
 \usepackage{lipsum}
 \usepackage{titlesec}
-\usepackage{tikz}
 
 
 
 
-% Green ORCID iD circle, ported from the upstream arxiv_two_column
-% template. Used by the author block when a front-matter `orcid:`
-% field is set; pre-defined here so authors don't have to import
-% tikz themselves.
-\definecolor{lime}{HTML}{A6CE39}
-% Drop the upstream \hspace{-2mm} trailer — it overlaps the
-% authblk-emitted affiliation superscript that follows. A small
-% positive kern keeps the icon clear of the next character.
-\DeclareRobustCommand{\orcidicon}{%
-  \begin{tikzpicture}
-    \draw[lime, fill=lime] (0,0) circle [radius=0.16]
-      node[white] {{\fontfamily{qag}\selectfont \tiny ID}};
-    \draw[white, fill=white] (-0.0625,0.095) circle [radius=0.007];
-  \end{tikzpicture}\kern0.4em%
-}
+% ORCID iD logo: the official green-circle PNG ships with paperese
+% and is copied alongside the .tex at render time so pdflatex
+% finds it via \includegraphics{orcid.png}.
 
 \hypersetup{colorlinks=true, linkcolor=purple, urlcolor=blue, citecolor=cyan, anchorcolor=black}
 
@@ -52,7 +39,7 @@
 \usepackage{authblk}
 \renewcommand*{\Authfont}{\bfseries}
 
-\author[1\thanks{\texttt{bkeller@university.edu}}]{Brenhin Keller\href{https://orcid.org/0000-0000-0000-0001}{\raisebox{0.5ex}{\orcidicon}}}
+\author[1\thanks{\texttt{bkeller@university.edu}}]{Brenhin Keller}
 \affil[1]{Dartmouth College}
 
 \begin{document}

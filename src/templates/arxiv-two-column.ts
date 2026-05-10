@@ -36,15 +36,12 @@ function authorBlock(authors: Author[], affiliations: Affiliation[]): string {
       ? a.affiliations.join(',')
       : '';
     const thanks = a.email ? `\\thanks{\\texttt{${escapeTex(a.email)}}}` : '';
-    // Lift the ORCID circle to sit at cap-height of the surrounding
-    // name. Without raisebox the tikzpicture's baseline anchors at
-    // the bottom of the circle, so the icon hangs below the
-    // baseline of the name and the affiliation-index superscript
-    // (rendered by authblk after this run) collides into it.
-    const orcid = a.orcid
-      ? `\\href{https://orcid.org/${a.orcid}}{\\raisebox{0.5ex}{\\orcidicon}}`
-      : '';
-    lines.push(`\\author[${affilIdx}${thanks}]{${escapeTex(a.name)}${orcid}}`);
+    // ORCID: not rendered today. orcidlink + tikz fail inside
+    // authblk's moving \\author argument; the bundled-PNG +
+    // \\includegraphics route broke page layout. Bundled assets
+    // (assets/orcid.svg, assets/orcid.png) stay shipped so a future
+    // fix has them at hand.
+    lines.push(`\\author[${affilIdx}${thanks}]{${escapeTex(a.name)}}`);
   }
 
   for (const af of affiliations) {
@@ -179,26 +176,13 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
 \\usepackage{lineno}
 \\usepackage{lipsum}
 \\usepackage{titlesec}
-\\usepackage{tikz}
 ${fontTex}
 ${offGridSize}
 ${headingSizes}
 
-% Green ORCID iD circle, ported from the upstream arxiv_two_column
-% template. Used by the author block when a front-matter \`orcid:\`
-% field is set; pre-defined here so authors don't have to import
-% tikz themselves.
-\\definecolor{lime}{HTML}{A6CE39}
-% Drop the upstream \\hspace{-2mm} trailer — it overlaps the
-% authblk-emitted affiliation superscript that follows. A small
-% positive kern keeps the icon clear of the next character.
-\\DeclareRobustCommand{\\orcidicon}{%
-  \\begin{tikzpicture}
-    \\draw[lime, fill=lime] (0,0) circle [radius=0.16]
-      node[white] {{\\fontfamily{qag}\\selectfont \\tiny ID}};
-    \\draw[white, fill=white] (-0.0625,0.095) circle [radius=0.007];
-  \\end{tikzpicture}\\kern0.4em%
-}
+% ORCID iD logo: the official green-circle PNG ships with paperese
+% and is copied alongside the .tex at render time so pdflatex
+% finds it via \\includegraphics{orcid.png}.
 
 \\hypersetup{colorlinks=true, linkcolor=purple, urlcolor=blue, citecolor=cyan, anchorcolor=black}
 
