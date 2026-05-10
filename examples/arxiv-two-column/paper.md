@@ -27,7 +27,7 @@ fermentum massa nec lectus pulvinar, vitae tristique purus consectetur.
 
 # Headings: first level {#sec:headings}
 
-See Section [@sec:headings] for the structure used throughout.
+See Section \ref{sec:headings} for the structure used throughout.
 
 ## Headings: second level
 
@@ -52,9 +52,9 @@ The documentation for `natbib` may be found at
 
 ## Figures
 
-See Figure {@fig:fig1}.
+See Figure \ref{fig:fig1}.
 
-![Sample figure caption.](placeholder.png){#fig:fig1 width=4cm}
+![Sample figure caption.\label{fig:fig1}](placeholder.png){width=4cm}
 
 ## Lists
 

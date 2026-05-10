@@ -37,7 +37,7 @@ function authorBlock(authors: Author[], affiliations: Affiliation[]): string {
       : '';
     const thanks = a.email ? `\\thanks{\\texttt{${escapeTex(a.email)}}}` : '';
     const orcid = a.orcid
-      ? `\\href{https://orcid.org/${a.orcid}}{\\textsuperscript{ORCID}}`
+      ? `\\href{https://orcid.org/${a.orcid}}{\\orcidicon}`
       : '';
     lines.push(`\\author[${affilIdx}${thanks}]{${escapeTex(a.name)}${orcid}}`);
   }
@@ -112,6 +112,20 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
 \\usepackage{array}
 \\usepackage{lineno}
 \\usepackage{titlesec}
+\\usepackage{tikz}
+
+% Green ORCID iD circle, ported from the upstream arxiv_two_column
+% template. Used by the author block when a front-matter \`orcid:\`
+% field is set; pre-defined here so authors don't have to import
+% tikz themselves.
+\\definecolor{lime}{HTML}{A6CE39}
+\\DeclareRobustCommand{\\orcidicon}{%
+  \\begin{tikzpicture}
+    \\draw[lime, fill=lime] (0,0) circle [radius=0.16]
+      node[white] {{\\fontfamily{qag}\\selectfont \\tiny ID}};
+    \\draw[white, fill=white] (-0.0625,0.095) circle [radius=0.007];
+  \\end{tikzpicture}\\hspace{-2mm}%
+}
 
 \\hypersetup{colorlinks=true, linkcolor=purple, urlcolor=blue, citecolor=cyan, anchorcolor=black}
 
