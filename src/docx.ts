@@ -139,12 +139,17 @@ function frontMatterPreamble(meta: TexFrontMatter): string {
   lines.push(':::', '');
 
   // Raw OpenXML continuous section break — closes the single-column
-  // header section. The two-column body section properties live in
-  // the trailing <w:sectPr> in document.xml (patched in our
-  // reference.docx).
+  // header section. Minimal sectPr (just type + cols): with full
+  // page geometry inline, Word interpreted the change as a layout
+  // shift and forced a page break despite `continuous`. Inheriting
+  // page size + margins from the trailing body sectPr keeps the
+  // section change truly continuous.
   lines.push(
     '```{=openxml}',
-    '<w:p><w:pPr><w:sectPr><w:type w:val="continuous"/><w:cols w:num="1"/></w:sectPr></w:pPr></w:p>',
+    '<w:p><w:pPr><w:sectPr>'
+      + '<w:type w:val="continuous"/>'
+      + '<w:cols w:num="1"/>'
+      + '</w:sectPr></w:pPr></w:p>',
     '```',
     '',
   );
@@ -244,9 +249,40 @@ async function pandocToDocx(
     encoding: 'utf8',
     cwd: opts.baseDir,
   });
-  const buf = fs.readFileSync(tmpOut);
+  const raw = fs.readFileSync(tmpOut);
   fs.unlinkSync(tmpOut);
-  return buf;
+  // Pandoc's docx writer emits a minimal trailing <w:sectPr> with no
+  // <w:type/>, which defaults to `nextPage` — Word treats the
+  // header→body section change as a page break even when the
+  // intermediate sectPr is `continuous`. Patch the trailing sectPr
+  // to be continuous so the whole document flows on one page.
+  return makeTrailingSectionContinuous(raw);
+}
+
+/** Open a docx Buffer, ensure the trailing <w:sectPr> declares
+ *  `<w:type w:val="continuous"/>`, and re-zip. The trailing sectPr
+ *  is the body section's properties; without `continuous` Word
+ *  defaults to `nextPage` and inserts a page break at any prior
+ *  section boundary. */
+async function makeTrailingSectionContinuous(buf: Buffer): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(buf);
+  const docFile = zip.file('word/document.xml');
+  if (!docFile) return buf;
+  let xml = await docFile.async('text');
+
+  // Find the LAST <w:sectPr>...</w:sectPr> (the body section's
+  // trailing one) and inject <w:type w:val="continuous"/> at its
+  // start if not already present.
+  const lastOpen = xml.lastIndexOf('<w:sectPr>');
+  if (lastOpen === -1) return buf;
+  const lastClose = xml.indexOf('</w:sectPr>', lastOpen);
+  if (lastClose === -1) return buf;
+  const sectPr = xml.slice(lastOpen, lastClose);
+  if (/<w:type\b/.test(sectPr)) return buf;
+  const patched = sectPr.replace('<w:sectPr>', '<w:sectPr><w:type w:val="continuous"/>');
+  xml = xml.slice(0, lastOpen) + patched + xml.slice(lastClose);
+  zip.file('word/document.xml', xml);
+  return zip.generateAsync({ type: 'nodebuffer' });
 }
 
 // Lazy-cached reference.docx, keyed by the style fields we apply to

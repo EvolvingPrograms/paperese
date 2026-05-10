@@ -36,8 +36,13 @@ function authorBlock(authors: Author[], affiliations: Affiliation[]): string {
       ? a.affiliations.join(',')
       : '';
     const thanks = a.email ? `\\thanks{\\texttt{${escapeTex(a.email)}}}` : '';
+    // Lift the ORCID circle to sit at cap-height of the surrounding
+    // name. Without raisebox the tikzpicture's baseline anchors at
+    // the bottom of the circle, so the icon hangs below the
+    // baseline of the name and the affiliation-index superscript
+    // (rendered by authblk after this run) collides into it.
     const orcid = a.orcid
-      ? `\\href{https://orcid.org/${a.orcid}}{\\orcidicon}`
+      ? `\\href{https://orcid.org/${a.orcid}}{\\raisebox{0.5ex}{\\orcidicon}}`
       : '';
     lines.push(`\\author[${affilIdx}${thanks}]{${escapeTex(a.name)}${orcid}}`);
   }
@@ -217,6 +222,7 @@ ${authorTex}
 \\twocolumn[\\begin{@twocolumnfalse}
 \\maketitle
 ${abstractTex}
+\\vspace{0.4cm}
 ${keywordsTex}
 \\vspace{0.5cm}
 \\end{@twocolumnfalse}]

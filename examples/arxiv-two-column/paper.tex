@@ -1,4 +1,4 @@
-\documentclass[twocolumn,switch]{article}
+\documentclass[twocolumn,switch,10pt]{article}
 \usepackage{preprint}
 \usepackage{hyperref}
 \usepackage[numbers,square]{natbib}
@@ -14,6 +14,9 @@
 \usepackage{lipsum}
 \usepackage{titlesec}
 \usepackage{tikz}
+
+
+
 
 % Green ORCID iD circle, ported from the upstream arxiv_two_column
 % template. Used by the author block when a front-matter `orcid:`
@@ -49,7 +52,7 @@
 \usepackage{authblk}
 \renewcommand*{\Authfont}{\bfseries}
 
-\author[1\thanks{\texttt{bkeller@university.edu}}]{Brenhin Keller\href{https://orcid.org/0000-0000-0000-0001}{\orcidicon}}
+\author[1\thanks{\texttt{bkeller@university.edu}}]{Brenhin Keller\href{https://orcid.org/0000-0000-0000-0001}{\raisebox{0.5ex}{\orcidicon}}}
 \affil[1]{Dartmouth College}
 
 \begin{document}
@@ -59,6 +62,7 @@
 \begin{abstract}
 Morbi eu neque et enim euismod cursus sit amet sit amet elit: Fusce eget neque placerat, vehicula dui id, placerat velit. Proin pellentesque fermentum sollicitudin. Etiam egestas sed dolor rutrum faucibus. Nunc ac viverra justo. Vestibulum eget erat pretium sem blandit placerat ullamcorper nec velit. Aliquam orci enim, luctus tempor euismod a, aliquam in ex. Morbi ultrices sapien quis neque sagittis condimentum.
 \end{abstract}
+\vspace{0.4cm}
 \keywords{keyword1, keyword2, keyword3}
 \vspace{0.5cm}
 \end{@twocolumnfalse}]
