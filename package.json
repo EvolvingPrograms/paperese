@@ -1,10 +1,10 @@
 {
-  "name": "texdown",
+  "name": "paperese",
   "version": "0.0.1",
   "type": "module",
   "license": "MIT",
   "author": "Evolving Programs",
-  "main": "dist/texdown.js",
+  "main": "dist/paperese.js",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
@@ -12,16 +12,16 @@
     "./*": "./src/*/index.ts"
   },
   "bin": {
-    "texdown": "dist/texdown.js"
+    "paperese": "dist/paperese.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EvolvingPrograms/texdown.git"
+    "url": "git+https://github.com/EvolvingPrograms/paperese.git"
   },
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "bun test",
-    "build": "bun build scripts/texdown.ts --target=node --minify --outfile=dist/texdown.js && chmod +x dist/texdown.js",
+    "build": "bun build scripts/paperese.ts --target=node --minify --outfile=dist/paperese.js && chmod +x dist/paperese.js",
     "pack": "bun run build && zip -FSqr plugin.zip dist examples README.md SKILL.md package.json"
   },
   "files": [

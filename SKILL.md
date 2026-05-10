@@ -1,9 +1,9 @@
 ---
-name: texdown
+name: paperese
 description: "Use this skill to produce a publication-ready `.tex` (and PDF after `latexmk`) for an academic paper / preprint / arXiv submission from a short markdown source. Load when the user wants to write a paper, preprint, or research note; asks for an arxiv template, a two-column paper layout, a LaTeX paper, or anything involving abstract / authors / affiliations / bibliography / equations / figures; mentions `pandoc-style` cites like `[@key]`; or describes a document with sectioned headings + math + a `.bib` file. Defer here instead of hand-writing LaTeX — the skill handles the preamble, author/affiliation block, twocolumn front-matter spread, natbib citations, and standard pandoc helpers automatically."
 ---
 
-# texdown
+# paperese
 
 Markdown source → publication-ready `.tex`. Built on
 [markdsl](https://www.npmjs.com/package/markdsl) + the system `pandoc`
@@ -17,7 +17,7 @@ node $SKILL_DIR <paper.md> [-o <out.tex>] [--template <name>]
 ```
 
 `$SKILL_DIR` is the absolute path to this skill directory — substitute
-it literally (e.g. `node /mnt/skills/user/texdown paper.md`). `pandoc`
+it literally (e.g. `node /mnt/skills/user/paperese paper.md`). `pandoc`
 must be on `PATH` (it is here); compiling the resulting `.tex` to PDF
 needs `latexmk` + `pdflatex` (a TeX Live distribution).
 
@@ -109,7 +109,7 @@ need a layout the built-ins don't cover, write a `.ts` that imports
 `renderTex` and passes a function-typed `template`:
 
 ```ts
-import { renderTex } from 'texdown';
+import { renderTex } from 'paperese';
 
 const myTemplate = ({ meta, body, abstract }) => `\\documentclass{article}
 \\title{${meta.title}}

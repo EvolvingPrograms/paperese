@@ -1,5 +1,5 @@
 // Run pandoc -t latex on a markdown body and return the LaTeX
-// fragment. Texdown's whole job is template assembly around this
+// fragment. Paperese's whole job is template assembly around this
 // fragment — pandoc does the AST → LaTeX heavy lifting (section
 // headers, equations, lists, figures, tables, citations, refs).
 //

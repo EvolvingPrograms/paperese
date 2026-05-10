@@ -1,7 +1,7 @@
 ---
 title: A Two Column Arxiv Template
 short_title: A Two Column Arxiv Template
-description: A two column template suitable for arxiv preprint submissions, ported to texdown.
+description: A two column template suitable for arxiv preprint submissions, ported to paperese.
 authors:
   - name: Brenhin Keller
     affiliation: Dartmouth College

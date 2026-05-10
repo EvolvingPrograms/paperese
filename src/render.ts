@@ -1,4 +1,4 @@
-// Top-level: markdown source string → LaTeX `.tex` source. Texdown
+// Top-level: markdown source string → LaTeX `.tex` source. Paperese
 // is a thin assembler around pandoc's LaTeX writer + a template:
 //
 //   1. splitFrontMatter (markdsl) — meta + body

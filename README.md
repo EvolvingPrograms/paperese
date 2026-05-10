@@ -1,4 +1,4 @@
-# texdown
+# paperese
 
 Markdown → LaTeX assembler. Built on [markdsl](https://github.com/EvolvingPrograms/markdsl) and a
 system `pandoc` for the AST → LaTeX heavy lifting.
@@ -13,7 +13,7 @@ tables.
 ## Usage
 
 ```ts
-import { renderTex } from 'texdown';
+import { renderTex } from 'paperese';
 
 const tex = renderTex(srcMarkdown, {
   template: 'arxiv-two-column',  // default

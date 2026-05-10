@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install pandoc
-        # texdown's renderer shells out to pandoc -t latex; ubuntu-latest
+        # paperese's renderer shells out to pandoc -t latex; ubuntu-latest
         # ships pandoc 3.x.
         run: sudo apt-get update && sudo apt-get install -y pandoc
 

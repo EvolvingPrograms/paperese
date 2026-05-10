@@ -1,4 +1,4 @@
-// Front-matter shape texdown reads. Extend as templates grow.
+// Front-matter shape paperese reads. Extend as templates grow.
 
 import type { FrontMatter as MarkdslFrontMatter } from 'markdsl';
 
@@ -31,7 +31,7 @@ export interface TexFrontMatter extends MarkdslFrontMatter {
   output?: string;
 }
 
-/** A texdown template: takes the parsed front-matter + the
+/** A paperese template: takes the parsed front-matter + the
  *  pandoc-rendered body LaTeX, returns the full `.tex` source. */
 export type TexTemplate = (input: {
   meta: TexFrontMatter;

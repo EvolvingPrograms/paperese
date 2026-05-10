@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// CLI: read a markdown source, render to LaTeX via the texdown
+// CLI: read a markdown source, render to LaTeX via the paperese
 // pipeline (front-matter + pandoc + template), write the result.
 //
 // Output path precedence (highest first):
@@ -8,11 +8,11 @@
 //   3. <input-basename>.tex next to the input file
 //
 // Usage:
-//   texdown paper.md                                  # writes paper.tex
-//   texdown paper.md -o out.tex                       # explicit output
-//   texdown paper.md --template arxiv-two-column     # explicit template (default)
-//   texdown paper.md --schema                         # dump schema/values, no render
-//   echo $body | texdown -                            # read source from stdin
+//   paperese paper.md                                  # writes paper.tex
+//   paperese paper.md -o out.tex                       # explicit output
+//   paperese paper.md --template arxiv-two-column     # explicit template (default)
+//   paperese paper.md --schema                         # dump schema/values, no render
+//   echo $body | paperese -                            # read source from stdin
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -41,7 +41,7 @@ interface ParsedArgs {
 
 function printUsage(): void {
   const tmpl = Object.keys(builtInTemplates).join(' | ');
-  console.error(`Usage: texdown <input.md> [-o <out.tex>] [--template ${tmpl}] [--schema]
+  console.error(`Usage: paperese <input.md> [-o <out.tex>] [--template ${tmpl}] [--schema]
 Pass '-' for input.md to read the source from stdin.`);
 }
 
@@ -69,7 +69,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 }
 
 function readStdinSync(): string {
-  // Synchronous stdin read — works under `cmd | texdown -` on Node/Bun.
+  // Synchronous stdin read — works under `cmd | paperese -` on Node/Bun.
   const fd = 0;
   const chunks: Buffer[] = [];
   const buf = Buffer.alloc(65536);
