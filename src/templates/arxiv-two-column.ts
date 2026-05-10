@@ -82,37 +82,87 @@ function resolveAffiliations(authors: Author[], declared?: Affiliation[]): {
   return { authors: rewritten, affiliations: out };
 }
 
-/** Map a front-matter font-family name to a LaTeX font setup
- *  fragment. Common Google / OS fonts route through their established
- *  pdflatex packages; anything unrecognized falls through to a
- *  fontspec line that requires xelatex/lualatex to compile. */
-function fontPackageFor(family: string | undefined): string {
+/** Encoding + Unicode setup for xelatex / lualatex. Native UTF-8;
+ *  fontspec lets `\\setmainfont` / `\\setmonofont` pull from any
+ *  installed system font, so block-drawing / box-drawing / geometric
+ *  shapes / arrows / common math all render with their real glyphs.
+ *  Default monospace is DejaVu Sans Mono — included by default on
+ *  every modern OS and arxiv build image, has the full Unicode
+ *  block-drawing range. */
+function xelatexFontspec(): string {
+  return [
+    '\\usepackage{fontspec}',
+    '% Pick a Unicode-complete monospace at compile time — fontspec',
+    '% checks each candidate and falls through if it isn\'t installed.',
+    '% DejaVu Sans Mono is the broadest match (full block-drawing /',
+    '% box-drawing / geometric range); Menlo is the macOS default;',
+    '% Liberation Mono is the standard Linux substitute. Latin',
+    '% Modern Mono (TeX Live default) is the last-resort baseline.',
+    '\\IfFontExistsTF{DejaVu Sans Mono}',
+    '  {\\setmonofont{DejaVu Sans Mono}}',
+    '  {\\IfFontExistsTF{Menlo}',
+    '    {\\setmonofont{Menlo}}',
+    '    {\\IfFontExistsTF{Liberation Mono}',
+    '      {\\setmonofont{Liberation Mono}}',
+    '      {}}}',
+  ].join('\n');
+}
+
+/** Encoding + Unicode setup for pdflatex. T1 fontenc + inputenc gives
+ *  Latin-1ish coverage; the safety-net table maps common Unicode
+ *  outside that range (block-drawing, geometric shapes, arrows, …)
+ *  to printable substitutes so pdflatex doesn't throw "Unicode
+ *  character not set up" errors. Only emitted when `engine: pdflatex`. */
+function pdflatexUnicodeSafetyNet(): string {
+  return [
+    '\\usepackage[utf8]{inputenc}',
+    '\\usepackage[T1]{fontenc}',
+    '\\usepackage{textcomp}',
+    '\\usepackage{newunicodechar}',
+    '% Block shades — grayscale so ░ vs █ stay distinguishable.',
+    '\\newunicodechar{█}{\\rule{0.6em}{1.2ex}}',
+    '\\newunicodechar{▓}{\\textcolor{black!75}{\\rule{0.6em}{1.2ex}}}',
+    '\\newunicodechar{▒}{\\textcolor{black!45}{\\rule{0.6em}{1.2ex}}}',
+    '\\newunicodechar{░}{\\textcolor{black!18}{\\rule{0.6em}{1.2ex}}}',
+    '\\newunicodechar{▀}{\\rule[0.5ex]{0.6em}{0.7ex}}',
+    '\\newunicodechar{▄}{\\rule{0.6em}{0.7ex}}',
+    '\\newunicodechar{─}{\\textemdash}',
+    '\\newunicodechar{│}{\\textbar}',
+    '\\newunicodechar{┌}{+}\\newunicodechar{┐}{+}\\newunicodechar{└}{+}\\newunicodechar{┘}{+}',
+    '\\newunicodechar{├}{+}\\newunicodechar{┤}{+}\\newunicodechar{┬}{+}\\newunicodechar{┴}{+}\\newunicodechar{┼}{+}',
+    '\\newunicodechar{═}{=}\\newunicodechar{║}{\\textbar}',
+    '\\newunicodechar{╔}{+}\\newunicodechar{╗}{+}\\newunicodechar{╚}{+}\\newunicodechar{╝}{+}',
+    '\\newunicodechar{■}{\\rule{0.6em}{0.6em}}\\newunicodechar{□}{\\fbox{\\phantom{x}}}',
+    '\\newunicodechar{●}{\\textbullet}\\newunicodechar{○}{\\textopenbullet}\\newunicodechar{▪}{\\textbullet}',
+    '\\newunicodechar{▶}{\\textgreater}\\newunicodechar{◀}{\\textless}',
+    '\\newunicodechar{✓}{\\checkmark}\\newunicodechar{✗}{\\texttimes}',
+    '\\newunicodechar{→}{\\textrightarrow}\\newunicodechar{←}{\\textleftarrow}',
+    '\\newunicodechar{↑}{\\textuparrow}\\newunicodechar{↓}{\\textdownarrow}',
+    '\\newunicodechar{≈}{\\ensuremath{\\approx}}\\newunicodechar{≠}{\\ensuremath{\\neq}}',
+    '\\newunicodechar{≤}{\\ensuremath{\\leq}}\\newunicodechar{≥}{\\ensuremath{\\geq}}',
+    '\\newunicodechar{±}{\\ensuremath{\\pm}}\\newunicodechar{×}{\\ensuremath{\\times}}\\newunicodechar{÷}{\\ensuremath{\\div}}',
+  ].join('\n');
+}
+
+/** Render a font-family directive for the active engine.
+ *  - xelatex / lualatex: use fontspec's \\setmainfont with the family
+ *    name as-is. Any installed system font works.
+ *  - pdflatex: route through the legacy pdflatex font packages
+ *    (mathptmx for Times, mathpazo for Palatino, etc.); unknown
+ *    families fall through to a comment so the user knows. */
+function fontDirective(family: string | undefined, engine: 'xelatex' | 'lualatex' | 'pdflatex'): string {
   if (!family) return '';
+  if (engine !== 'pdflatex') {
+    return `\\setmainfont{${family}}`;
+  }
   const f = family.trim().toLowerCase();
-  // pdflatex-friendly families
-  if (f === 'times' || f === 'times new roman') {
-    return '\\usepackage{mathptmx}';
-  }
-  if (f === 'palatino' || f === 'pagella') {
-    return '\\usepackage{mathpazo}';
-  }
-  if (f === 'helvetica' || f === 'arial') {
-    return '\\usepackage{helvet}\n\\renewcommand{\\familydefault}{\\sfdefault}';
-  }
-  if (f === 'courier' || f === 'monospace') {
-    return '\\usepackage{courier}\n\\renewcommand{\\familydefault}{\\ttdefault}';
-  }
-  if (f === 'libertine' || f === 'linux libertine') {
-    return '\\usepackage{libertine}';
-  }
-  if (f === 'utopia' || f === 'fourier') {
-    return '\\usepackage{fourier}';
-  }
-  // fontspec fallback — needs xelatex/lualatex. Authors choosing a
-  // bundled-font family (EB Garamond, Crimson Pro, etc.) get this.
-  return `% ${family} via fontspec — compile with xelatex or lualatex
-\\usepackage{fontspec}
-\\setmainfont{${family}}`;
+  if (f === 'times' || f === 'times new roman') return '\\usepackage{mathptmx}';
+  if (f === 'palatino' || f === 'pagella')      return '\\usepackage{mathpazo}';
+  if (f === 'helvetica' || f === 'arial')       return '\\usepackage{helvet}\n\\renewcommand{\\familydefault}{\\sfdefault}';
+  if (f === 'courier' || f === 'monospace')     return '\\usepackage{courier}\n\\renewcommand{\\familydefault}{\\ttdefault}';
+  if (f === 'libertine' || f === 'linux libertine') return '\\usepackage{libertine}';
+  if (f === 'utopia' || f === 'fourier')        return '\\usepackage{fourier}';
+  return `% ${family}: no pdflatex package mapping — switch to xelatex / lualatex.`;
 }
 
 /** Pick a documentclass option for the body font size. 10/11/12pt
@@ -153,7 +203,10 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
     : '';
 
   const { className, sizeOpt } = documentClassSize(style.size);
-  const fontTex = fontPackageFor(style.font);
+  // Default engine: xelatex — Unicode-native, fontspec for fonts.
+  // Switch to pdflatex if explicitly requested.
+  const engine = meta.engine ?? 'xelatex';
+  const fontTex = fontDirective(style.font, engine);
   // For sizes outside the 8/9/10/11/12/14/17/20 grid, set the body
   // baseline explicitly. \fontsize{N}{1.2N} = N-pt text on 1.2N-pt
   // leading (Word's default ratio).
@@ -171,7 +224,16 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
   // in front-matter to keep the upstream cropmark style.
   const suppressTrimMarks = meta.trim_marks ? '' : '\\SetBgContents{}';
 
-  return `\\documentclass[twocolumn,switch,${sizeOpt}]{${className}}
+  // Engine-specific encoding setup. xelatex / lualatex use fontspec
+  // for native UTF-8 + system fonts. pdflatex stays on inputenc /
+  // fontenc + a newunicodechar safety net for the Unicode codepoints
+  // T1 doesn't cover (block-drawing, geometric shapes, arrows, …).
+  const encodingTex = engine === 'pdflatex'
+    ? pdflatexUnicodeSafetyNet()
+    : xelatexFontspec();
+
+  return `% !TEX program = ${engine}
+\\documentclass[twocolumn,switch,${sizeOpt}]{${className}}
 \\usepackage{preprint}
 ${suppressTrimMarks}
 % preprint.sty enables \\flushbottom, which stretches inter-paragraph
@@ -182,8 +244,7 @@ ${suppressTrimMarks}
 \\raggedbottom
 \\usepackage{hyperref}
 \\usepackage[numbers,square]{natbib}
-\\usepackage[utf8]{inputenc}
-\\usepackage[T1]{fontenc}
+${encodingTex}
 \\usepackage{xcolor}
 \\usepackage{graphicx}
 \\usepackage{booktabs}
@@ -193,64 +254,6 @@ ${suppressTrimMarks}
 \\usepackage{lineno}
 \\usepackage{lipsum}
 \\usepackage{titlesec}
-% Unicode safety net for pdflatex with T1 encoding. Most prose
-% Unicode passes through inputenc fine; the typical breakage is
-% Unicode block-drawing / box-drawing / geometric shapes that
-% appear in code samples or ASCII-art figures (e.g. terminal
-% output captured into a paper). Map them to printable substitutes
-% so pdflatex doesn't throw a "Unicode character" error. Authors
-% who need full Unicode fidelity should compile with xelatex /
-% lualatex (\\setmainfont via fontspec) instead.
-\\usepackage{textcomp}
-\\usepackage{newunicodechar}
-% Block shades — preserve the four density levels via grayscale
-% so binary / cellular-automaton renderings (░ = 0, █ = 1, etc.)
-% stay distinguishable in the rendered PDF. xcolor is loaded above.
-\\newunicodechar{█}{\\rule{0.6em}{1.2ex}}
-\\newunicodechar{▓}{\\textcolor{black!75}{\\rule{0.6em}{1.2ex}}}
-\\newunicodechar{▒}{\\textcolor{black!45}{\\rule{0.6em}{1.2ex}}}
-\\newunicodechar{░}{\\textcolor{black!18}{\\rule{0.6em}{1.2ex}}}
-\\newunicodechar{▀}{\\rule[0.5ex]{0.6em}{0.7ex}}
-\\newunicodechar{▄}{\\rule{0.6em}{0.7ex}}
-\\newunicodechar{─}{\\textemdash}
-\\newunicodechar{│}{\\textbar}
-\\newunicodechar{┌}{+}
-\\newunicodechar{┐}{+}
-\\newunicodechar{└}{+}
-\\newunicodechar{┘}{+}
-\\newunicodechar{├}{+}
-\\newunicodechar{┤}{+}
-\\newunicodechar{┬}{+}
-\\newunicodechar{┴}{+}
-\\newunicodechar{┼}{+}
-\\newunicodechar{═}{=}
-\\newunicodechar{║}{\\textbar}
-\\newunicodechar{╔}{+}
-\\newunicodechar{╗}{+}
-\\newunicodechar{╚}{+}
-\\newunicodechar{╝}{+}
-\\newunicodechar{■}{\\rule{0.6em}{0.6em}}
-\\newunicodechar{□}{\\fbox{\\phantom{x}}}
-\\newunicodechar{●}{\\textbullet}
-\\newunicodechar{○}{\\textopenbullet}
-\\newunicodechar{▪}{\\textbullet}
-\\newunicodechar{▶}{\\textgreater}
-\\newunicodechar{◀}{\\textless}
-\\newunicodechar{▲}{\\^{}}
-\\newunicodechar{▼}{v}
-\\newunicodechar{✓}{\\checkmark}
-\\newunicodechar{✗}{\\texttimes}
-\\newunicodechar{→}{\\textrightarrow}
-\\newunicodechar{←}{\\textleftarrow}
-\\newunicodechar{↑}{\\textuparrow}
-\\newunicodechar{↓}{\\textdownarrow}
-\\newunicodechar{≈}{\\ensuremath{\\approx}}
-\\newunicodechar{≠}{\\ensuremath{\\neq}}
-\\newunicodechar{≤}{\\ensuremath{\\leq}}
-\\newunicodechar{≥}{\\ensuremath{\\geq}}
-\\newunicodechar{±}{\\ensuremath{\\pm}}
-\\newunicodechar{×}{\\ensuremath{\\times}}
-\\newunicodechar{÷}{\\ensuremath{\\div}}
 ${fontTex}
 ${offGridSize}
 ${headingSizes}

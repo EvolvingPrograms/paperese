@@ -43,6 +43,14 @@ export interface TexFrontMatter extends MarkdslFrontMatter {
    *  `background` package. Default: `false`. Set `true` to keep
    *  the upstream behaviour. */
   trim_marks?: boolean;
+  /** LaTeX engine the rendered `.tex` is intended for. Defaults to
+   *  `'xelatex'` — Unicode-native via `fontspec`, no `\\newunicodechar`
+   *  mapping table needed. Switch to `'pdflatex'` if you specifically
+   *  need that engine (older arxiv submission flows, build images
+   *  without xelatex installed). The template emits a
+   *  `% !TEX program = <engine>` magic comment so latexmk and modern
+   *  editors pick the right binary automatically. */
+  engine?: 'xelatex' | 'lualatex' | 'pdflatex';
   /** Typography overrides — font family + sizes (and any other
    *  fields markdsl's DocStyle exposes). Applied to both the .tex
    *  and .docx render paths so a single source produces the same
