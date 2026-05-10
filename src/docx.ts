@@ -296,52 +296,71 @@ async function getDefaultReferenceDoc(
   return out;
 }
 
-/** Patch `<w:docDefaults><w:rPrDefault><w:rPr>` so the requested
- *  font + size become the document-wide cascade root. Word's font
- *  resolution starts here — it's the closest analogue to CSS's
- *  `:root` styling. Pandoc's reference.docx defaults to a theme
- *  font reference (`asciiTheme="minorHAnsi"` resolving to Aptos /
- *  Calibri) and 12pt (sz="24" half-points); we replace both with
- *  explicit values so the cascade is deterministic regardless of
- *  the consumer's installed theme.
+/** Patch `word/styles.xml` so the requested font + size become the
+ *  cascade root for *every* style in the doc, not just the body
+ *  paragraph. Word resolves font in this priority order:
  *
- *  Note: Word ignores `w:rFonts` at this level if any `theme`
- *  attribute is also present, so we replace the entire element
- *  rather than just adding our own attrs. */
+ *    1. Per-run `<w:rFonts>` on the run itself
+ *    2. Style-level `<w:rPr><w:rFonts>` (Heading1, Title, etc.)
+ *    3. `<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts>` (cascade root)
+ *
+ *  Pandoc's reference.docx ships theme-font references at every
+ *  level — `<w:rFonts asciiTheme="minorHAnsi" .../>` for body and
+ *  `majorHAnsi` for headings/title. Both resolve to Aptos under
+ *  Word's default theme, which is wrong for academic papers.
+ *
+ *  We replace EVERY `<w:rFonts ...Theme="..."/>` element with an
+ *  explicit family reference so the override propagates through
+ *  every style — body, headings, title, links, captions — without
+ *  having to know each style ID up front. Sizes only patch
+ *  `<w:rPrDefault>` since headings should keep their relative
+ *  scaling (Heading1 at 16pt etc.). */
 function patchNormalStyle(
   stylesXml: string,
   style: DocStyle,
 ): string {
-  const fontFrag = style.font
-    ? `<w:rFonts w:ascii="${escapeXml(style.font)}" w:hAnsi="${escapeXml(style.font)}" w:cs="${escapeXml(style.font)}" w:eastAsia="${escapeXml(style.font)}"/>`
-    : '';
-  const halfPt = style.size ? Math.round(style.size * 2) : null;
-  const szFrag = halfPt !== null
-    ? `<w:sz w:val="${halfPt}"/><w:szCs w:val="${halfPt}"/>`
-    : '';
-  if (!fontFrag && !szFrag) return stylesXml;
+  let xml = stylesXml;
 
-  return stylesXml.replace(
-    /(<w:rPrDefault>\s*<w:rPr>)([\s\S]*?)(<\/w:rPr>\s*<\/w:rPrDefault>)/,
-    (_full, open: string, inner: string, close: string) => {
-      let body = inner;
-      if (fontFrag) {
-        // Replace any existing rFonts (theme-based or explicit).
-        body = /<w:rFonts\b[^/]*\/>/.test(body)
-          ? body.replace(/<w:rFonts\b[^/]*\/>/, fontFrag)
-          : fontFrag + body;
-      }
-      if (halfPt !== null) {
+  if (style.font) {
+    const fontAttrs = `w:ascii="${escapeXml(style.font)}" w:hAnsi="${escapeXml(style.font)}" w:cs="${escapeXml(style.font)}" w:eastAsia="${escapeXml(style.font)}"`;
+    // Match any `<w:rFonts ...Theme="..." .../>` element (single or
+    // multi-line) and rewrite it to use explicit families.
+    xml = xml.replace(
+      /<w:rFonts\b[^/]*\bw:[a-zA-Z]*Theme="[^"]+"[^/]*\/>/g,
+      `<w:rFonts ${fontAttrs}/>`,
+    );
+    // Also catch any explicit-but-non-theme rFonts in the rPrDefault
+    // (consumer might pass a reference doc that's already explicit).
+    xml = xml.replace(
+      /(<w:rPrDefault>\s*<w:rPr>[\s\S]*?)<w:rFonts\b[^/]*\/>/,
+      `$1<w:rFonts ${fontAttrs}/>`,
+    );
+  }
+
+  if (style.size !== undefined) {
+    const halfPt = Math.round(style.size * 2);
+    const szFrag = `<w:sz w:val="${halfPt}"/><w:szCs w:val="${halfPt}"/>`;
+    // Patch the body baseline only — heading sizes are intentionally
+    // bigger and shouldn't get clamped to body size.
+    xml = xml.replace(
+      /(<w:rPrDefault>\s*<w:rPr>)([\s\S]*?)(<\/w:rPr>\s*<\/w:rPrDefault>)/,
+      (_full, open: string, inner: string, close: string) => {
+        let body = inner;
         body = /<w:sz\b[^/]*\/>/.test(body)
           ? body.replace(/<w:sz\b[^/]*\/>/, `<w:sz w:val="${halfPt}"/>`)
           : body + `<w:sz w:val="${halfPt}"/>`;
         body = /<w:szCs\b[^/]*\/>/.test(body)
           ? body.replace(/<w:szCs\b[^/]*\/>/, `<w:szCs w:val="${halfPt}"/>`)
           : body + `<w:szCs w:val="${halfPt}"/>`;
-      }
-      return open + body + close;
-    },
-  );
+        // szFrag reference avoids the unused-var warning when the
+        // code path falls through to the existing-element branch.
+        void szFrag;
+        return open + body + close;
+      },
+    );
+  }
+
+  return xml;
 }
 
 function escapeXml(s: string): string {
