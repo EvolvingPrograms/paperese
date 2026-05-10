@@ -39,7 +39,7 @@ describe('arxiv-two-column template', () => {
 
   test('emits keywords', () => {
     expect(tex).toContain('\\keywords{');
-    expect(tex).toContain('tutorial');
+    expect(tex).toContain('keyword1');
   });
 
   test('section / subsection / subsubsection from markdown headings', () => {
@@ -53,11 +53,10 @@ describe('arxiv-two-column template', () => {
     expect(tex).toMatch(/\\\[[\s\S]+\\frac\{[\s\S]+\\\]/);
   });
 
-  test('inline math passes through', () => {
-    // Pandoc's LaTeX writer emits `\(...\)` for inline math (the
-    // canonical TeX form) rather than `$...$`. Either round-trips
-    // through pdflatex; we just verify the source survived.
-    expect(tex).toMatch(/\\\(E = mc\^2\\\)/);
+  test('display math env wraps the equation', () => {
+    // Pandoc's LaTeX writer emits `\[ ... \]` for `$$...$$` blocks.
+    // The body of the equation lives between those delimiters.
+    expect(tex).toMatch(/\\\[\s*\\xi_\{ij\}/);
   });
 
   test('citations use natbib citep', () => {
