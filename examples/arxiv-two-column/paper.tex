@@ -8,6 +8,8 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{amsmath,amssymb}
+\usepackage{longtable}
+\usepackage{array}
 \usepackage{lineno}
 \usepackage{titlesec}
 
@@ -18,6 +20,11 @@
 \titlespacing\section{0pt}{12pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
 \titlespacing\subsection{0pt}{10pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
 \titlespacing\subsubsection{0pt}{8pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
+
+% Pandoc helpers — \tightlist is emitted on collapsed itemize/enumerate
+% blocks; \passthrough wraps inline code with smart quotes preserved.
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
 
 \title{A Two Column Arxiv Template}
 
@@ -77,27 +84,6 @@ See Figure \{\citet{fig:fig1}\}.
 \includegraphics[width=4cm,height=\textheight,keepaspectratio,alt={Sample figure caption.}]{placeholder.png}
 \caption{Sample figure caption.}\label{fig:fig1}
 \end{figure}
-
-\subsection{Tables}\label{tables}
-
-See Table \{\citet{tab:table}\}.
-
-\begin{longtable}[]{@{}lll@{}}
-\caption{Sample table title}\label{tab:table}\tabularnewline
-\toprule\noalign{}
-Name & Description & Size (μm) \\
-\midrule\noalign{}
-\endfirsthead
-\toprule\noalign{}
-Name & Description & Size (μm) \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-Dendrite & Input terminal & ∼100 \\
-Axon & Output terminal & ∼10 \\
-Soma & Cell body & up to 10⁶ \\
-\end{longtable}
 
 \subsection{Lists}\label{lists}
 

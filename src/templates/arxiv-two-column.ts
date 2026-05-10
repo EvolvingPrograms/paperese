@@ -108,6 +108,8 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
 \\usepackage{graphicx}
 \\usepackage{booktabs}
 \\usepackage{amsmath,amssymb}
+\\usepackage{longtable}
+\\usepackage{array}
 \\usepackage{lineno}
 \\usepackage{titlesec}
 
@@ -118,6 +120,11 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
 \\titlespacing\\section{0pt}{12pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
 \\titlespacing\\subsection{0pt}{10pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
 \\titlespacing\\subsubsection{0pt}{8pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
+
+% Pandoc helpers — \\tightlist is emitted on collapsed itemize/enumerate
+% blocks; \\passthrough wraps inline code with smart quotes preserved.
+\\providecommand{\\tightlist}{\\setlength{\\itemsep}{0pt}\\setlength{\\parskip}{0pt}}
+\\providecommand{\\passthrough}[1]{#1}
 
 \\title{${escapeTex(title)}}
 

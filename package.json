@@ -21,7 +21,7 @@
     "templates/"
   ],
   "dependencies": {
-    "markdsl": "^0.0.1"
+    "markdsl": "^0.0.2"
   },
   "devDependencies": {
     "@types/bun": "latest",

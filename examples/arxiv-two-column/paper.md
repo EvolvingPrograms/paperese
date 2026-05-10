@@ -56,18 +56,6 @@ See Figure {@fig:fig1}.
 
 ![Sample figure caption.](placeholder.png){#fig:fig1 width=4cm}
 
-## Tables
-
-See Table {@tab:table}.
-
-| Name     | Description     | Size (μm)  |
-|----------|-----------------|------------|
-| Dendrite | Input terminal  | ∼100       |
-| Axon     | Output terminal | ∼10        |
-| Soma     | Cell body       | up to 10⁶  |
-
-: Sample table title {#tab:table}
-
 ## Lists
 
 - Lorem ipsum dolor sit amet
