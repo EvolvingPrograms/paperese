@@ -31,16 +31,20 @@
     "README.md",
     "SKILL.md"
   ],
-  "dependencies": {
-    "markdsl": "^0.0.2"
-  },
   "devDependencies": {
     "@types/bun": "^1.3.13",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.6.2",
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.1.1",
+    "markdsl": "^0.0.2"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "markdsl": "^0.0.2"
+  },
+  "peerDependenciesMeta": {
+    "markdsl": {
+      "optional": true
+    }
   }
 }

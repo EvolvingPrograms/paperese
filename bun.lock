@@ -4,18 +4,20 @@
   "workspaces": {
     "": {
       "name": "texdown",
-      "dependencies": {
-        "markdsl": "^0.0.2",
-      },
       "devDependencies": {
         "@types/bun": "^1.3.13",
         "@types/js-yaml": "^4.0.9",
         "@types/node": "^25.6.2",
         "js-yaml": "^4.1.1",
+        "markdsl": "^0.0.2",
       },
       "peerDependencies": {
+        "markdsl": "^0.0.2",
         "typescript": "^5",
       },
+      "optionalPeers": [
+        "markdsl",
+      ],
     },
   },
   "packages": {
