@@ -1,6 +1,6 @@
 # texdown
 
-Markdown → LaTeX assembler. Built on [markdsl](../markdsl) and a
+Markdown → LaTeX assembler. Built on [markdsl](https://github.com/EvolvingPrograms/markdsl) and a
 system `pandoc` for the AST → LaTeX heavy lifting.
 
 The goal: write a markdown source ~half the size of the equivalent
