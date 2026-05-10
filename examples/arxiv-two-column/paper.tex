@@ -1,5 +1,6 @@
 \documentclass[twocolumn,switch,10pt]{article}
 \usepackage{preprint}
+\SetBgContents{}
 \usepackage{hyperref}
 \usepackage[numbers,square]{natbib}
 \usepackage[utf8]{inputenc}
@@ -33,6 +34,41 @@
 % blocks; \passthrough wraps inline code with smart quotes preserved.
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \providecommand{\passthrough}[1]{#1}
+
+% Pandoc citeproc emits \begin{CSLReferences} for the bibliography
+% list when --citeproc resolves citations from inline references:
+% Pandoc's default template defines the environment + helper macros;
+% since we emit a fragment we provide them ourselves. This matches
+% pandoc's stock definition (with a small heading prepended).
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newenvironment{CSLReferences}[2]% #1 hanging-indent flag, #2 entry-spacing
+  {\section*{References}%
+   % Author-year CSL styles emit \bibitem[\citeproctext]{key} where
+   % the optional label is intentionally empty; \bibitem's default
+   % falls back to a [0] numeric counter, which we don't want
+   % showing next to every entry. Redefine bibitem inside the
+   % bibliography so it just emits \item, dropping both args.
+   \renewcommand{\bibitem}[2][]{\item}%
+   \begin{list}{}{%
+     \setlength{\itemsep}{0pt}%
+     \setlength{\parsep}{0pt}%
+     \ifodd #1
+       \setlength{\leftmargin}{\cslhangindent}%
+       \setlength{\itemindent}{-1\cslhangindent}%
+     \else
+       \setlength{\leftmargin}{0pt}%
+       \setlength{\itemindent}{0pt}%
+     \fi
+     \setlength{\parskip}{#2\baselineskip}}}%
+  {\end{list}}
+\providecommand{\CSLBlock}[1]{#1\hfill\break}
+\providecommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
+\providecommand{\CSLRightInline}[1]{\parbox[t]{\dimexpr\linewidth-\csllabelwidth\relax}{#1}}
+\providecommand{\CSLIndent}[1]{\hspace{\cslhangindent}}
+\providecommand{\citeproctext}{}
 
 \title{A Two Column Arxiv Template}
 
@@ -115,6 +151,6 @@ See Figure \ref{fig:fig1}.
 \end{itemize}
 
 
-\bibliography{refs}
+\bibliography{_paperese-refs}
 
 \end{document}

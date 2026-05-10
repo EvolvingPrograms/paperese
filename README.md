@@ -160,6 +160,70 @@ affiliations:
   - name: Department of Statistics, University Y
 ```
 
+## References
+
+Two ways to provide a bibliography. Pick whichever fits your
+workflow — both render the references list automatically.
+
+### `bibliography:` (external `.bib` file)
+
+Use this when you already have a BibTeX file. The `.tex` path uses
+natbib (`\citep{}` / `\citet{}` left in source, the `.bib` resolves
+at compile time); the `.docx` path uses pandoc's citeproc.
+
+```yaml
+---
+bibliography: refs.bib
+---
+
+We confirm prior findings [@kour2014real; @hadash2018].
+```
+
+### `references:` (inline CSL-JSON in front-matter)
+
+Use this when you don't have a separate `.bib` file — Claude /
+agents that draft a paper inline, single-file submissions, etc.
+Each entry is a CSL-JSON object (pandoc's native YAML
+bibliography format). The `.tex` and `.docx` paths both fall
+through to citeproc and emit the bibliography directly in the
+document body.
+
+```yaml
+---
+references:
+  - id: kour2014real
+    type: paper-conference
+    title: "Real-time segmentation of on-line handwritten arabic script"
+    author:
+      - { family: Kour,   given: George }
+      - { family: Saabne, given: Raid }
+    "container-title": "Frontiers in Handwriting Recognition (ICFHR)"
+    issued: { "date-parts": [[2014]] }
+    page: "417-422"
+
+  - id: hadash2018
+    type: article
+    title: "Estimate and replace: A novel approach to integrating deep neural networks with existing applications"
+    author:
+      - { family: Hadash, given: Guy }
+    issued: { "date-parts": [[2018]] }
+---
+
+We confirm prior findings [@kour2014real] and the integration
+approach [@hadash2018].
+```
+
+Mixing both fields isn't supported — set one or the other.
+Common CSL `type` values: `article-journal`, `paper-conference`,
+`book`, `chapter`, `thesis`, `webpage`, `manuscript`. Full schema:
+[CSL-JSON spec](https://docs.citationstyles.org/en/stable/specification.html).
+
+**Citation syntax gotcha** (applies to both modes): pandoc's
+`[@key]` parser greedily folds an adjacent `[...]` into a
+preceding `\command[arg]` as if it were a second optional argument.
+If you write `\lipsum[N] [@key]` on one line the citation gets
+eaten. Split into separate paragraphs.
+
 ## CLI
 
 ```

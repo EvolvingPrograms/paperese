@@ -14,6 +14,7 @@ import path from 'node:path';
 import { splitFrontMatter } from 'markdsl';
 
 import { copyAssetsTo } from './assets';
+import { referencesToBibtex } from './bibtex';
 import { runPandocLatex } from './pandoc';
 import { builtInTemplates } from './templates';
 import type { TexFrontMatter, TexTemplate } from './types';
@@ -49,7 +50,24 @@ export function renderTex(srcText: string, opts: RenderTexOptions = {}): string 
   const { meta, body } = splitFrontMatter<TexFrontMatter>(srcText);
   const template = resolveTemplate(opts.template);
 
-  const bibFile = meta.bibliography;
+  // Citation handling: a real .bib file (natbib) is the canonical
+  // path. When the front-matter declares `references:` instead, we
+  // serialize that array to a generated .bib next to the .tex so the
+  // natbib pipeline (numeric `[1]` / `[2]` cites, hyperlinked) is
+  // identical to a hand-written .bib.
+  const baseDir = opts.baseDir
+    ?? (opts.output ? path.dirname(path.resolve(opts.output))
+        : meta.output ? path.dirname(path.resolve(meta.output))
+        : process.cwd());
+  let bibFile = meta.bibliography;
+  if (!bibFile && Array.isArray(meta.references) && meta.references.length > 0) {
+    const generatedPath = path.join(baseDir, '_paperese-refs.bib');
+    fs.writeFileSync(generatedPath, referencesToBibtex(meta.references));
+    bibFile = path.basename(generatedPath); // relative — pdflatex resolves in CWD
+    // Surface the generated path to the template so it emits
+    // `\\bibliography{<file>}` like a hand-written .bib.
+    meta.bibliography = bibFile;
+  }
   const bodyTex = runPandocLatex(body, { bibFile });
 
   // Abstract handling: if it's a string, treat as plain prose. If

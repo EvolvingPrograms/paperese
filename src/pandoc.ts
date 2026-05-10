@@ -24,19 +24,40 @@ const PANDOC_FROM = [
   '+link_attributes',
 ].join('');
 
+export interface RunPandocLatexOpts {
+  /** Path to a BibTeX file. When set, citations resolve via natbib
+   *  (`\citep{}` / `\citet{}` left in the .tex; the .bib file is the
+   *  source of truth and a downstream `\bibliography{}` finalises). */
+  bibFile?: string;
+  /** Use citeproc to resolve citations inline (numeric or
+   *  author-year per the CSL style). Set this when there's no .bib
+   *  file — pandoc reads `references:` from the document's YAML
+   *  front-matter. The bibliography list is appended as a
+   *  `references` Div in the body. */
+  citeproc?: boolean;
+  /** Pre-resolved YAML front-matter to prepend before the body so
+   *  citeproc can find inline `references:` entries. Pandoc reads
+   *  the first YAML block of the input as document metadata. */
+  yamlPreamble?: string;
+}
+
 /** Convert a markdown body to a LaTeX fragment via the system
  *  `pandoc` binary. Returns just the body LaTeX — no preamble, no
  *  `\begin{document}` — so it can be spliced into a template. */
-export function runPandocLatex(body: string, opts: { bibFile?: string } = {}): string {
+export function runPandocLatex(body: string, opts: RunPandocLatexOpts = {}): string {
   const args = ['--from', PANDOC_FROM, '-t', 'latex', '--wrap=preserve'];
   if (opts.bibFile) {
-    // With --natbib pandoc emits \citep{}/\citet{} commands instead
-    // of \hyperlink, leaving the .bib file as the source of truth
-    // (the arxiv template uses natbib).
+    // natbib: leaves \citep{} / \citet{} in the output. The
+    // template's \bibliography{<file>} closes the loop.
     args.push('--natbib');
+  } else if (opts.citeproc) {
+    // citeproc: resolves citations inline (numeric or author-year
+    // per CSL). Reads `references:` YAML from the input front-matter.
+    args.push('--citeproc');
   }
+  const input = opts.yamlPreamble ? `${opts.yamlPreamble}\n\n${body}` : body;
   return execSync(`pandoc ${args.map((a) => `'${a}'`).join(' ')}`, {
-    input: body,
+    input,
     encoding: 'utf8',
   });
 }

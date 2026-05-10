@@ -144,6 +144,10 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
   const keywordsTex = keywords.length
     ? `\\keywords{${keywords.map(escapeTex).join(', ')}}`
     : '';
+  // \\bibliography{...} only when natbib will resolve refs from a
+  // .bib file. With citeproc (inline `references:` in front-matter)
+  // pandoc embeds the bibliography list directly in the body, so
+  // we leave bibTex empty.
   const bibTex = meta.bibliography
     ? `\\bibliography{${meta.bibliography.replace(/\.bib$/, '')}}`
     : '';
@@ -161,8 +165,15 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
     style.h2_size ? `\\titleformat*{\\subsection}{\\fontsize{${style.h2_size}}{${(style.h2_size * 1.2).toFixed(0)}}\\bfseries}` : '',
   ].filter(Boolean).join('\n');
 
+  // preprint.sty draws corner trim marks via \\SetBgContents from the
+  // `background` package. Default to suppressing them (preprint
+  // typeset for screen reading); opt back in with `trim_marks: true`
+  // in front-matter to keep the upstream cropmark style.
+  const suppressTrimMarks = meta.trim_marks ? '' : '\\SetBgContents{}';
+
   return `\\documentclass[twocolumn,switch,${sizeOpt}]{${className}}
 \\usepackage{preprint}
+${suppressTrimMarks}
 \\usepackage{hyperref}
 \\usepackage[numbers,square]{natbib}
 \\usepackage[utf8]{inputenc}
@@ -196,6 +207,41 @@ ${headingSizes}
 % blocks; \\passthrough wraps inline code with smart quotes preserved.
 \\providecommand{\\tightlist}{\\setlength{\\itemsep}{0pt}\\setlength{\\parskip}{0pt}}
 \\providecommand{\\passthrough}[1]{#1}
+
+% Pandoc citeproc emits \\begin{CSLReferences} for the bibliography
+% list when --citeproc resolves citations from inline references:
+% Pandoc's default template defines the environment + helper macros;
+% since we emit a fragment we provide them ourselves. This matches
+% pandoc's stock definition (with a small heading prepended).
+\\newlength{\\cslhangindent}
+\\setlength{\\cslhangindent}{1.5em}
+\\newlength{\\csllabelwidth}
+\\setlength{\\csllabelwidth}{3em}
+\\newenvironment{CSLReferences}[2]% #1 hanging-indent flag, #2 entry-spacing
+  {\\section*{References}%
+   % Author-year CSL styles emit \\bibitem[\\citeproctext]{key} where
+   % the optional label is intentionally empty; \\bibitem's default
+   % falls back to a [0] numeric counter, which we don't want
+   % showing next to every entry. Redefine bibitem inside the
+   % bibliography so it just emits \\item, dropping both args.
+   \\renewcommand{\\bibitem}[2][]{\\item}%
+   \\begin{list}{}{%
+     \\setlength{\\itemsep}{0pt}%
+     \\setlength{\\parsep}{0pt}%
+     \\ifodd #1
+       \\setlength{\\leftmargin}{\\cslhangindent}%
+       \\setlength{\\itemindent}{-1\\cslhangindent}%
+     \\else
+       \\setlength{\\leftmargin}{0pt}%
+       \\setlength{\\itemindent}{0pt}%
+     \\fi
+     \\setlength{\\parskip}{#2\\baselineskip}}}%
+  {\\end{list}}
+\\providecommand{\\CSLBlock}[1]{#1\\hfill\\break}
+\\providecommand{\\CSLLeftMargin}[1]{\\parbox[t]{\\csllabelwidth}{#1}}
+\\providecommand{\\CSLRightInline}[1]{\\parbox[t]{\\dimexpr\\linewidth-\\csllabelwidth\\relax}{#1}}
+\\providecommand{\\CSLIndent}[1]{\\hspace{\\cslhangindent}}
+\\providecommand{\\citeproctext}{}
 
 \\title{${escapeTex(title)}}
 

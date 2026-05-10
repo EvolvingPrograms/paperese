@@ -23,8 +23,11 @@ import path from 'node:path';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
 
+import yaml from 'js-yaml';
 import JSZip from 'jszip';
 import { splitFrontMatter } from 'markdsl';
+
+import { referencesToBibtex } from './bibtex';
 import type { DocStyle } from 'markdsl/docx';
 
 import type { TexFrontMatter, Author, Affiliation } from './types';
@@ -55,18 +58,25 @@ export async function renderDocx(
   // 2. Expand `\lipsum[N]` so demo bodies have content.
   const cleanedBody = lipsumExpand(stripLatexOnly(body));
 
-  // 3. Build the front-matter preamble + body. Pandoc reads the
-  //    standard YAML front-matter at the top (title etc.); we
-  //    pre-render the richer author block as markdown above the
-  //    body so it's part of the document content.
+  // 3. If front-matter declares inline `references:` (no `.bib`),
+  //    serialize it to a generated .bib so the docx citeproc
+  //    pipeline (--bibliography) is uniform with the .tex natbib
+  //    pipeline. Identical 1:1 mapping; round-trips cleanly.
+  let bibliography = meta.bibliography;
+  if (!bibliography && Array.isArray(meta.references) && meta.references.length > 0) {
+    const generated = path.join(baseDir, '_paperese-refs.bib');
+    fs.writeFileSync(generated, referencesToBibtex(meta.references));
+    bibliography = path.basename(generated);
+  }
+
+  // 4. Build the front-matter preamble + body.
   const preamble = frontMatterPreamble(meta);
   const md = `${pandocFrontMatter(meta)}\n${preamble}\n${cleanedBody}`;
 
-  // 4. Hand to pandoc. Citations resolve against the front-matter
-  //    bibliography (relative to baseDir).
+  // 5. Hand to pandoc.
   const buf = await pandocToDocx(md, {
     baseDir,
-    bibliography: meta.bibliography,
+    bibliography,
     referenceDoc: opts.referenceDoc,
     style: meta.style,
   });
@@ -82,10 +92,16 @@ function pandocFrontMatter(meta: TexFrontMatter): string {
   const out: Record<string, unknown> = {};
   if (meta.title) out.title = meta.title;
   if (meta.short_title) out.short_title = meta.short_title;
+  // Pass `references:` (CSL-JSON inline bibliography) through to
+  // pandoc's metadata so `--citeproc` resolves `[@key]` against
+  // them when no .bib file is set. Use js-yaml so nested CSL
+  // entries serialise correctly — manual stringification doesn't.
+  if (Array.isArray(meta.references) && meta.references.length) {
+    out.references = meta.references;
+  }
   if (Object.keys(out).length === 0) return '';
 
-  const yamlLines = Object.entries(out).map(([k, v]) => `${k}: ${typeof v === 'string' ? `"${v.replace(/"/g, '\\"')}"` : v}`);
-  return `---\n${yamlLines.join('\n')}\n---\n`;
+  return `---\n${yaml.dump(out, { lineWidth: -1 })}---\n`;
 }
 
 /** Build the front-matter preamble as markdown. Wrapped in

@@ -26,10 +26,23 @@ export interface TexFrontMatter extends MarkdslFrontMatter {
   affiliations?: Affiliation[];
   abstract?: string;
   keywords?: string[];
-  /** Path (relative to baseDir) to a BibTeX file consumed by `\bibliography{}`. */
+  /** Path (relative to baseDir) to a BibTeX file. When set, the
+   *  LaTeX path uses natbib (`\bibliography{<file>}`); the docx path
+   *  feeds it to `pandoc --citeproc`. */
   bibliography?: string;
+  /** Inline references — array of CSL-JSON entries (pandoc's native
+   *  YAML bibliography format). Use this when no .bib file is
+   *  available; both render paths fall through to citeproc and emit
+   *  the references list at the end of the document. Co-existing
+   *  with `bibliography:` is allowed but ambiguous; prefer one. */
+  references?: Array<Record<string, unknown>>;
   /** Output path for the rendered .tex file. */
   output?: string;
+  /** Show the corner trim marks (the small L-shaped tick marks at
+   *  page corners) that the upstream `preprint.sty` draws via the
+   *  `background` package. Default: `false`. Set `true` to keep
+   *  the upstream behaviour. */
+  trim_marks?: boolean;
   /** Typography overrides — font family + sizes (and any other
    *  fields markdsl's DocStyle exposes). Applied to both the .tex
    *  and .docx render paths so a single source produces the same
