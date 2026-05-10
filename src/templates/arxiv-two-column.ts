@@ -174,6 +174,12 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
   return `\\documentclass[twocolumn,switch,${sizeOpt}]{${className}}
 \\usepackage{preprint}
 ${suppressTrimMarks}
+% preprint.sty enables \\flushbottom, which stretches inter-paragraph
+% glue to make the two columns finish at the same baseline. When the
+% imbalance is large, that stretching lands as obvious gaps after
+% section headings (where the most flexible glue lives). Switch to
+% \\raggedbottom: uneven column bottoms, no stretching.
+\\raggedbottom
 \\usepackage{hyperref}
 \\usepackage[numbers,square]{natbib}
 \\usepackage[utf8]{inputenc}
