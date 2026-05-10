@@ -111,6 +111,7 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
 \\usepackage{longtable}
 \\usepackage{array}
 \\usepackage{lineno}
+\\usepackage{lipsum}
 \\usepackage{titlesec}
 \\usepackage{tikz}
 

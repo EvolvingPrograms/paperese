@@ -8,7 +8,7 @@ authors:
     email: bkeller@university.edu
     orcid: 0000-0000-0000-0001
     is_corresponding: true
-keywords: [tutorial, python, seismic, attributes]
+keywords: [keyword1, keyword2, keyword3]
 abstract: >
   Morbi eu neque et enim euismod cursus sit amet sit amet elit: Fusce eget
   neque placerat, vehicula dui id, placerat velit. Proin pellentesque
@@ -22,16 +22,17 @@ output: paper.tex
 
 # Introduction
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur
-fermentum massa nec lectus pulvinar, vitae tristique purus consectetur.
+\lipsum[2]
+
+\lipsum[3]
 
 # Headings: first level {#sec:headings}
 
-See Section \ref{sec:headings} for the structure used throughout.
+\lipsum[7] See Section \ref{sec:headings}.
 
 ## Headings: second level
 
-Vivamus vehicula leo et urna fermentum, in convallis lectus mollis.
+\lipsum[5]
 
 $$
 \xi_{ij}(t) = \frac{\alpha_i(t) a^{w_t}_{ij} \beta_j(t+1) b^{v_{t+1}}_j(y_{t+1})}{\sum_{i=1}^{N} \sum_{j=1}^{N} \alpha_i(t) a^{w_t}_{ij} \beta_j(t+1) b^{v_{t+1}}_j(y_{t+1})}
@@ -39,12 +40,15 @@ $$
 
 ### Headings: third level
 
-Maecenas at neque ac orci venenatis pharetra. Energy is $E = mc^2$ in
-its simplest closed form.
+\lipsum[6]
+
+\paragraph{Paragraph}
+\lipsum[7]
 
 # Examples of citations, figures, tables, references {#sec:others}
 
-Phasellus dictum nibh ac justo congue, vitae luctus odio porta.
+\lipsum[8]
+
 [@kour2014real; @kour2014fast] and see [@hadash2018estimate].
 
 The documentation for `natbib` may be found at
@@ -52,7 +56,11 @@ The documentation for `natbib` may be found at
 
 ## Figures
 
+\lipsum[10]
+
 See Figure \ref{fig:fig1}.
+
+\lipsum[11]
 
 ![Sample figure caption.\label{fig:fig1}](placeholder.png){width=4cm}
 
