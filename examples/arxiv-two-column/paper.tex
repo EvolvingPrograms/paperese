@@ -1,0 +1,117 @@
+\documentclass[twocolumn,switch]{article}
+\usepackage{preprint}
+\usepackage{hyperref}
+\usepackage[numbers,square]{natbib}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{lineno}
+\usepackage{titlesec}
+
+\hypersetup{colorlinks=true, linkcolor=purple, urlcolor=blue, citecolor=cyan, anchorcolor=black}
+
+\bibliographystyle{unsrtnat}
+
+\titlespacing\section{0pt}{12pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
+\titlespacing\subsection{0pt}{10pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
+\titlespacing\subsubsection{0pt}{8pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
+
+\title{A Two Column Arxiv Template}
+
+\usepackage{authblk}
+\renewcommand*{\Authfont}{\bfseries}
+
+\author[1\thanks{\texttt{bkeller@university.edu}}]{Brenhin Keller\href{https://orcid.org/0000-0000-0000-0001}{\textsuperscript{ORCID}}}
+\affil[1]{Dartmouth College}
+
+\begin{document}
+
+\twocolumn[\begin{@twocolumnfalse}
+\maketitle
+\begin{abstract}
+Morbi eu neque et enim euismod cursus sit amet sit amet elit: Fusce eget neque placerat, vehicula dui id, placerat velit. Proin pellentesque fermentum sollicitudin. Etiam egestas sed dolor rutrum faucibus. Nunc ac viverra justo. Vestibulum eget erat pretium sem blandit placerat ullamcorper nec velit. Aliquam orci enim, luctus tempor euismod a, aliquam in ex. Morbi ultrices sapien quis neque sagittis condimentum.
+\end{abstract}
+\keywords{tutorial, python, seismic, attributes}
+\vspace{0.5cm}
+\end{@twocolumnfalse}]
+
+\section{Introduction}\label{introduction}
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur
+fermentum massa nec lectus pulvinar, vitae tristique purus consectetur.
+
+\section{Headings: first level}\label{sec:headings}
+
+See Section \citep{sec:headings} for the structure used throughout.
+
+\subsection{Headings: second level}\label{headings-second-level}
+
+Vivamus vehicula leo et urna fermentum, in convallis lectus mollis.
+
+\[
+\xi_{ij}(t) = \frac{\alpha_i(t) a^{w_t}_{ij} \beta_j(t+1) b^{v_{t+1}}_j(y_{t+1})}{\sum_{i=1}^{N} \sum_{j=1}^{N} \alpha_i(t) a^{w_t}_{ij} \beta_j(t+1) b^{v_{t+1}}_j(y_{t+1})}
+\]
+
+\subsubsection{Headings: third level}\label{headings-third-level}
+
+Maecenas at neque ac orci venenatis pharetra. Energy is \(E = mc^2\) in
+its simplest closed form.
+
+\section{Examples of citations, figures, tables, references}\label{sec:others}
+
+Phasellus dictum nibh ac justo congue, vitae luctus odio porta.
+\citep{kour2014real, kour2014fast} and see \citep{hadash2018estimate}.
+
+The documentation for \texttt{natbib} may be found at
+\url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}.
+
+\subsection{Figures}\label{figures}
+
+See Figure \{\citet{fig:fig1}\}.
+
+\begin{figure}
+\centering
+\includegraphics[width=4cm,height=\textheight,keepaspectratio,alt={Sample figure caption.}]{placeholder.png}
+\caption{Sample figure caption.}\label{fig:fig1}
+\end{figure}
+
+\subsection{Tables}\label{tables}
+
+See Table \{\citet{tab:table}\}.
+
+\begin{longtable}[]{@{}lll@{}}
+\caption{Sample table title}\label{tab:table}\tabularnewline
+\toprule\noalign{}
+Name & Description & Size (μm) \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Name & Description & Size (μm) \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Dendrite & Input terminal & ∼100 \\
+Axon & Output terminal & ∼10 \\
+Soma & Cell body & up to 10⁶ \\
+\end{longtable}
+
+\subsection{Lists}\label{lists}
+
+\begin{itemize}
+\tightlist
+\item
+  Lorem ipsum dolor sit amet
+\item
+  consectetur adipiscing elit
+\item
+  Aliquam dignissim blandit est, in dictum tortor gravida eget.
+\end{itemize}
+
+
+\bibliography{refs}
+
+\end{document}
