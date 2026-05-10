@@ -45,8 +45,16 @@ export function longtableToTable(tex: string): string {
     // directives + the duplicate header block between them.
     body = body
       .replace(/\\noalign\{\}/g, '')
+      // First strip the duplicate-header block when both bookends exist…
       .replace(/\\endfirsthead\s*[\s\S]*?\\endhead/g, '')
-      .replace(/\\endlastfoot/g, '');
+      // …then mop up any remaining standalone directives. Pandoc sometimes
+      // emits just `\endhead` (or just `\endfirsthead`) with no matching
+      // partner depending on caption / header shape, and any survivor will
+      // pull longtable internals (\LT@echunk, \LT@max@sel) into a tabular
+      // and break the build.
+      .replace(/\\endfirsthead\b/g, '')
+      .replace(/\\endhead\b/g, '')
+      .replace(/\\endlastfoot\b/g, '');
 
     // After stripping pagination, longtable's `\bottomrule` sits BEFORE the
     // body rows (it lived in the foot block). Move it to the end so the
