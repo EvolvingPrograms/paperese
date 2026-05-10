@@ -203,10 +203,13 @@ ${suppressTrimMarks}
 % lualatex (\\setmainfont via fontspec) instead.
 \\usepackage{textcomp}
 \\usepackage{newunicodechar}
+% Block shades — preserve the four density levels via grayscale
+% so binary / cellular-automaton renderings (░ = 0, █ = 1, etc.)
+% stay distinguishable in the rendered PDF. xcolor is loaded above.
 \\newunicodechar{█}{\\rule{0.6em}{1.2ex}}
-\\newunicodechar{▓}{\\rule{0.6em}{1.2ex}}
-\\newunicodechar{▒}{\\rule{0.6em}{1.2ex}}
-\\newunicodechar{░}{\\rule{0.6em}{1.2ex}}
+\\newunicodechar{▓}{\\textcolor{black!75}{\\rule{0.6em}{1.2ex}}}
+\\newunicodechar{▒}{\\textcolor{black!45}{\\rule{0.6em}{1.2ex}}}
+\\newunicodechar{░}{\\textcolor{black!18}{\\rule{0.6em}{1.2ex}}}
 \\newunicodechar{▀}{\\rule[0.5ex]{0.6em}{0.7ex}}
 \\newunicodechar{▄}{\\rule{0.6em}{0.7ex}}
 \\newunicodechar{─}{\\textemdash}
