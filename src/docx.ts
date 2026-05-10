@@ -88,12 +88,21 @@ function pandocFrontMatter(meta: TexFrontMatter): string {
   return `---\n${yamlLines.join('\n')}\n---\n`;
 }
 
-/** Build the front-matter preamble as markdown. Wrapped in a Div
- *  with class `.header` so a downstream consumer that does want to
- *  pull it into a separate section can; pandoc's docx writer
- *  ignores the class and just renders the children inline. */
+/** Build the front-matter preamble as markdown. Wrapped in
+ *  `::: {.header}` mirroring the legalese / markdsl/docx
+ *  convention — a header section that spans the page width
+ *  ahead of a multi-column body.
+ *
+ *  pandoc's docx writer doesn't read the `.header` class as a
+ *  section break on its own, so we follow the closing fence
+ *  with a raw OpenXML continuous section break that ends the
+ *  single-column header and starts the two-column body. The
+ *  trailing <w:sectPr> in our reference.docx (patched to
+ *  `<w:cols w:num="2"/>` by getDefaultReferenceDoc) provides
+ *  the body's column config; this break just closes the
+ *  preceding single-column scope. */
 function frontMatterPreamble(meta: TexFrontMatter): string {
-  const lines: string[] = [];
+  const lines: string[] = ['::: {.header}', ''];
 
   const authors = (meta.authors ?? []) as Author[];
   if (authors.length) {
@@ -126,6 +135,19 @@ function frontMatterPreamble(meta: TexFrontMatter): string {
   if (meta.keywords?.length) {
     lines.push(`**Keywords:** ${meta.keywords.join(', ')}`, '');
   }
+
+  lines.push(':::', '');
+
+  // Raw OpenXML continuous section break — closes the single-column
+  // header section. The two-column body section properties live in
+  // the trailing <w:sectPr> in document.xml (patched in our
+  // reference.docx).
+  lines.push(
+    '```{=openxml}',
+    '<w:p><w:pPr><w:sectPr><w:type w:val="continuous"/><w:cols w:num="1"/></w:sectPr></w:pPr></w:p>',
+    '```',
+    '',
+  );
 
   return lines.join('\n');
 }
