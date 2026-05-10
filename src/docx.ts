@@ -233,10 +233,28 @@ async function pandocToDocx(
 // over the same cached doc.
 const referenceCache = new Map<string, string>();
 
+/** Fall through to academic-paper defaults when the front-matter
+ *  doesn't set them: serif body in Times New Roman at 10pt with
+ *  two-column layout (the arxiv preprint convention). Pandoc's
+ *  default reference.docx is Aptos sans-serif at 11pt — fine for
+ *  letters / memos, wrong for papers. */
+const DOCX_DEFAULTS: Required<Pick<DocStyle, 'font' | 'size'>> & { columns: number } = {
+  font: 'Times New Roman',
+  size: 10,
+  columns: 2,
+};
+
 async function getDefaultReferenceDoc(
   style: DocStyle = {},
 ): Promise<string> {
-  const key = JSON.stringify({ font: style.font, size: style.size, columns: style.columns ?? 2 });
+  const font = style.font ?? DOCX_DEFAULTS.font;
+  const size = style.size ?? DOCX_DEFAULTS.size;
+  const columns = typeof style.columns === 'number'
+    ? style.columns
+    : (style.columns?.count ?? DOCX_DEFAULTS.columns);
+  const resolved: DocStyle = { ...style, font, size, columns };
+
+  const key = JSON.stringify({ font, size, columns });
   const cached = referenceCache.get(key);
   if (cached && fs.existsSync(cached)) return cached;
 
@@ -254,10 +272,7 @@ async function getDefaultReferenceDoc(
   if (!docFile) throw new Error('pandoc reference.docx is missing word/document.xml');
   let docXml = await docFile.async('text');
 
-  const numCols = typeof style.columns === 'number'
-    ? style.columns
-    : (style.columns?.count ?? 2);
-  const colsTag = `<w:cols w:num="${numCols}" w:space="720"/>`;
+  const colsTag = `<w:cols w:num="${columns}" w:space="720"/>`;
   if (/<w:cols\b[^/]*\/>/.test(docXml)) {
     docXml = docXml.replace(/<w:cols\b[^/]*\/>/, colsTag);
   } else {
@@ -268,13 +283,11 @@ async function getDefaultReferenceDoc(
   // — styles.xml: font family + body size ——————————————————————
   // The "Normal" style is the cascade root; setting font + sz here
   // propagates to every paragraph that doesn't override.
-  if (style.font || style.size) {
-    const stylesFile = zip.file('word/styles.xml');
-    if (stylesFile) {
-      let stylesXml = await stylesFile.async('text');
-      stylesXml = patchNormalStyle(stylesXml, style);
-      zip.file('word/styles.xml', stylesXml);
-    }
+  const stylesFile = zip.file('word/styles.xml');
+  if (stylesFile) {
+    let stylesXml = await stylesFile.async('text');
+    stylesXml = patchNormalStyle(stylesXml, resolved);
+    zip.file('word/styles.xml', stylesXml);
   }
 
   const buf = await zip.generateAsync({ type: 'nodebuffer' });

@@ -115,10 +115,11 @@ function fontPackageFor(family: string | undefined): string {
 
 /** Pick a documentclass option for the body font size. 10/11/12pt
  *  fall through to the standard article class; other integer sizes
- *  use extarticle which supports 8/9/14/17/20pt. Defaults to 11pt
- *  (paperese house default — slightly larger than upstream). */
+ *  use extarticle which supports 8/9/14/17/20pt. Defaults to 10pt
+ *  — matches the upstream arxiv-two-column template and the
+ *  paperese docx-side default for visual parity across formats. */
 function documentClassSize(size: number | undefined): { className: string; sizeOpt: string } {
-  const s = size ?? 11;
+  const s = size ?? 10;
   if ([10, 11, 12].includes(s)) return { className: 'article', sizeOpt: `${s}pt` };
   if ([8, 9, 14, 17, 20].includes(s)) return { className: 'extarticle', sizeOpt: `${s}pt` };
   // Off-grid: use extarticle's nearest legal step + an explicit
