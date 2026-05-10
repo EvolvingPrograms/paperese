@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 import { splitFrontMatter } from 'markdsl';
 
@@ -100,4 +101,43 @@ export function renderTexToFile(
 ): string {
   renderTex(srcText, { ...opts, output });
   return output;
+}
+
+/** Markdown source → compile all the way to a `.pdf`. Renders the
+ *  intermediate `.tex` (using the selected template + engine), then
+ *  shells out to latexmk to drive the chosen LaTeX engine and any
+ *  bibtex / makeindex passes. Resolves to the .pdf path.
+ *
+ *  Requires the LaTeX engine declared in front-matter (`engine:`,
+ *  default `xelatex`) on PATH along with `latexmk`. */
+export function renderPdf(
+  srcText: string,
+  output: string,
+  opts: RenderTexOptions = {},
+): string {
+  // Render the .tex alongside the requested .pdf so latexmk's
+  // outputs land in the same directory.
+  const outDir = path.dirname(path.resolve(output));
+  const stem = path.basename(output, path.extname(output));
+  const texPath = path.join(outDir, `${stem}.tex`);
+  fs.mkdirSync(outDir, { recursive: true });
+  renderTex(srcText, { ...opts, output: texPath });
+
+  // Engine: read from front-matter, default xelatex (Unicode-native).
+  const { meta } = splitFrontMatter<TexFrontMatter>(srcText);
+  const engine = meta.engine ?? 'xelatex';
+  const engineFlag = ({ xelatex: '-xelatex', lualatex: '-lualatex', pdflatex: '-pdf' } as const)[engine];
+
+  // latexmk handles the multi-pass rebuild (latex → bibtex → latex
+  // → latex) automatically.
+  execSync(
+    `latexmk ${engineFlag} -interaction=nonstopmode -halt-on-error ${JSON.stringify(path.basename(texPath))}`,
+    { cwd: outDir, stdio: 'inherit' },
+  );
+
+  const pdfPath = path.join(outDir, `${stem}.pdf`);
+  if (!fs.existsSync(pdfPath)) {
+    throw new Error(`renderPdf: latexmk completed but ${pdfPath} was not produced.`);
+  }
+  return pdfPath;
 }

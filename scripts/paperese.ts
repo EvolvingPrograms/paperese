@@ -19,7 +19,7 @@ import path from 'node:path';
 
 import yaml from 'js-yaml';
 
-import { renderTex } from '@/render';
+import { renderTex, renderPdf } from '@/render';
 import { renderDocx } from '@/docx';
 import { builtInTemplates } from '@/templates';
 
@@ -32,7 +32,7 @@ import {
 } from 'markdsl';
 import type { TexFrontMatter } from '@/types';
 
-type Format = 'tex' | 'docx';
+type Format = 'pdf' | 'tex' | 'docx';
 
 interface ParsedArgs {
   inputFile: string | null;
@@ -45,8 +45,9 @@ interface ParsedArgs {
 
 function printUsage(): void {
   const tmpl = Object.keys(builtInTemplates).join(' | ');
-  console.error(`Usage: paperese <input.md> [-o <out>] [--format tex|docx] [--template ${tmpl}] [--schema]
-Default format is 'tex'. Pass '-' for input.md to read the source from stdin.`);
+  console.error(`Usage: paperese <input.md> [-o <out>] [--format pdf|tex|docx] [--template ${tmpl}] [--schema]
+Default format is 'pdf' (latexmk + xelatex). The format can also be inferred from the -o file extension.
+Pass '-' for input.md to read the source from stdin.`);
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -55,7 +56,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     readFromStdin: false,
     output: null,
     template: 'arxiv-two-column',
-    format: 'tex',
+    format: 'pdf',
     schemaOnly: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -64,13 +65,17 @@ function parseArgs(argv: string[]): ParsedArgs {
     if (a === '--template')             { out.template = argv[++i] ?? out.template; continue; }
     if (a === '--format' || a === '-f') {
       const fmt = argv[++i];
-      if (fmt !== 'tex' && fmt !== 'docx') {
-        console.error(`Unknown format '${fmt}'. Use 'tex' or 'docx'.`);
+      if (fmt !== 'pdf' && fmt !== 'tex' && fmt !== 'docx') {
+        console.error(`Unknown format '${fmt}'. Use 'pdf', 'tex' or 'docx'.`);
         process.exit(1);
       }
       out.format = fmt;
       continue;
     }
+    // Bare format flags: --pdf / --tex / --docx
+    if (a === '--pdf')  { out.format = 'pdf'; continue; }
+    if (a === '--tex')  { out.format = 'tex'; continue; }
+    if (a === '--docx') { out.format = 'docx'; continue; }
     if (a === '--schema')               { out.schemaOnly = true; continue; }
     if (a === '-h' || a === '--help')   { printUsage(); process.exit(0); }
     if (a === '-')                      { out.readFromStdin = true; continue; }
@@ -127,11 +132,23 @@ if (args.schemaOnly) {
   process.exit(0);
 }
 
-// Resolve output path: CLI flag > front-matter `output:` > <input>.<ext>.
-// `output:` in front-matter is .tex-flavored; for docx we swap the
-// extension so the same source can target both.
+// Format: CLI --format > -o file extension > default 'pdf'. The
+// output path is derived from -o, then `output:` front-matter, then
+// <input>.<ext>.
 const { meta } = splitFrontMatter<TexFrontMatter>(src);
-const ext = args.format === 'docx' ? 'docx' : 'tex';
+
+// Infer format from -o extension when --format wasn't passed
+// explicitly. (`paperese paper.md -o paper.tex` should produce .tex
+// even though the default is pdf.)
+let format = args.format;
+if (args.output) {
+  const ext = path.extname(args.output).toLowerCase();
+  if (ext === '.pdf')  format = 'pdf';
+  if (ext === '.tex')  format = 'tex';
+  if (ext === '.docx') format = 'docx';
+}
+
+const ext = format;
 let outputPath: string;
 if (args.output) {
   outputPath = path.resolve(args.output);
@@ -142,18 +159,17 @@ if (args.output) {
   const fmAbs = path.isAbsolute(meta.output)
     ? meta.output
     : path.resolve(inputDir, meta.output);
-  // Swap the front-matter extension to match the requested format.
   outputPath = fmAbs.replace(/\.\w+$/, `.${ext}`);
 } else if (args.inputFile) {
   const { dir, name } = path.parse(path.resolve(args.inputFile));
   outputPath = path.join(dir, `${name}.${ext}`);
-} else if (args.format === 'tex') {
+} else if (format === 'tex') {
   // stdin + no `output:` + no -o + tex → emit to stdout.
   process.stdout.write(renderTex(src, { template: args.template as never }));
   process.exit(0);
 } else {
-  // docx is binary; refuse to spew on stdout without an explicit path.
-  console.error('docx output requires an explicit -o or front-matter `output:`.');
+  // pdf and docx are binary; refuse to spew on stdout without a path.
+  console.error(`${format} output requires an explicit -o or front-matter \`output:\`.`);
   process.exit(1);
 }
 
@@ -161,14 +177,12 @@ const baseDir = args.inputFile
   ? path.dirname(path.resolve(args.inputFile))
   : process.cwd();
 
-if (args.format === 'docx') {
+if (format === 'docx') {
   await renderDocx(src, { output: outputPath, baseDir });
+} else if (format === 'pdf') {
+  renderPdf(src, outputPath, { template: args.template as never, baseDir });
 } else {
-  renderTex(src, {
-    template: args.template as never,
-    output: outputPath,
-    baseDir,
-  });
+  renderTex(src, { template: args.template as never, output: outputPath, baseDir });
 }
 
 console.log(outputPath);
