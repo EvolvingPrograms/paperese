@@ -193,6 +193,61 @@ ${suppressTrimMarks}
 \\usepackage{lineno}
 \\usepackage{lipsum}
 \\usepackage{titlesec}
+% Unicode safety net for pdflatex with T1 encoding. Most prose
+% Unicode passes through inputenc fine; the typical breakage is
+% Unicode block-drawing / box-drawing / geometric shapes that
+% appear in code samples or ASCII-art figures (e.g. terminal
+% output captured into a paper). Map them to printable substitutes
+% so pdflatex doesn't throw a "Unicode character" error. Authors
+% who need full Unicode fidelity should compile with xelatex /
+% lualatex (\\setmainfont via fontspec) instead.
+\\usepackage{textcomp}
+\\usepackage{newunicodechar}
+\\newunicodechar{█}{\\rule{0.6em}{1.2ex}}
+\\newunicodechar{▓}{\\rule{0.6em}{1.2ex}}
+\\newunicodechar{▒}{\\rule{0.6em}{1.2ex}}
+\\newunicodechar{░}{\\rule{0.6em}{1.2ex}}
+\\newunicodechar{▀}{\\rule[0.5ex]{0.6em}{0.7ex}}
+\\newunicodechar{▄}{\\rule{0.6em}{0.7ex}}
+\\newunicodechar{─}{\\textemdash}
+\\newunicodechar{│}{\\textbar}
+\\newunicodechar{┌}{+}
+\\newunicodechar{┐}{+}
+\\newunicodechar{└}{+}
+\\newunicodechar{┘}{+}
+\\newunicodechar{├}{+}
+\\newunicodechar{┤}{+}
+\\newunicodechar{┬}{+}
+\\newunicodechar{┴}{+}
+\\newunicodechar{┼}{+}
+\\newunicodechar{═}{=}
+\\newunicodechar{║}{\\textbar}
+\\newunicodechar{╔}{+}
+\\newunicodechar{╗}{+}
+\\newunicodechar{╚}{+}
+\\newunicodechar{╝}{+}
+\\newunicodechar{■}{\\rule{0.6em}{0.6em}}
+\\newunicodechar{□}{\\fbox{\\phantom{x}}}
+\\newunicodechar{●}{\\textbullet}
+\\newunicodechar{○}{\\textopenbullet}
+\\newunicodechar{▪}{\\textbullet}
+\\newunicodechar{▶}{\\textgreater}
+\\newunicodechar{◀}{\\textless}
+\\newunicodechar{▲}{\\^{}}
+\\newunicodechar{▼}{v}
+\\newunicodechar{✓}{\\checkmark}
+\\newunicodechar{✗}{\\texttimes}
+\\newunicodechar{→}{\\textrightarrow}
+\\newunicodechar{←}{\\textleftarrow}
+\\newunicodechar{↑}{\\textuparrow}
+\\newunicodechar{↓}{\\textdownarrow}
+\\newunicodechar{≈}{\\ensuremath{\\approx}}
+\\newunicodechar{≠}{\\ensuremath{\\neq}}
+\\newunicodechar{≤}{\\ensuremath{\\leq}}
+\\newunicodechar{≥}{\\ensuremath{\\geq}}
+\\newunicodechar{±}{\\ensuremath{\\pm}}
+\\newunicodechar{×}{\\ensuremath{\\times}}
+\\newunicodechar{÷}{\\ensuremath{\\div}}
 ${fontTex}
 ${offGridSize}
 ${headingSizes}
