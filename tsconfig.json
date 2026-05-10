@@ -27,6 +27,7 @@
   },
   "include": [
     "src/**/*.ts",
+    "scripts/**/*",
     "tests/**/*",
     "node_modules/markdsl/src/types/*.d.ts"
   ]
