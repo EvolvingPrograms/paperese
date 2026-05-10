@@ -23,7 +23,9 @@ import path from 'node:path';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
 
+import JSZip from 'jszip';
 import { splitFrontMatter } from 'markdsl';
+import type { DocStyle } from 'markdsl/docx';
 
 import type { TexFrontMatter, Author, Affiliation } from './types';
 
@@ -62,7 +64,12 @@ export async function renderDocx(
 
   // 4. Hand to pandoc. Citations resolve against the front-matter
   //    bibliography (relative to baseDir).
-  const buf = await pandocToDocx(md, { baseDir, bibliography: meta.bibliography, referenceDoc: opts.referenceDoc });
+  const buf = await pandocToDocx(md, {
+    baseDir,
+    bibliography: meta.bibliography,
+    referenceDoc: opts.referenceDoc,
+    style: meta.style,
+  });
   if (opts.output) fs.writeFileSync(opts.output, buf);
   return buf;
 }
@@ -177,7 +184,12 @@ function lipsumExpand(body: string): string {
  *  cross-refs (the bibliography section in particular). */
 async function pandocToDocx(
   md: string,
-  opts: { baseDir: string; bibliography?: string; referenceDoc?: string },
+  opts: {
+    baseDir: string;
+    bibliography?: string;
+    referenceDoc?: string;
+    style?: DocStyle;
+  },
 ): Promise<Buffer> {
   const tmpOut = path.join(os.tmpdir(), `paperese-${Date.now()}-${Math.random().toString(36).slice(2)}.docx`);
   const args = [
@@ -195,13 +207,14 @@ async function pandocToDocx(
     }
   }
 
-  // Pandoc's docx writer can't set `<w:cols w:num="N"/>` directly;
-  // the section property is read from the `--reference-doc`
-  // template. Generate one at first use by taking pandoc's default
-  // reference.docx and patching the body section to use two columns;
-  // cached on disk so subsequent renders skip the work.
-  // Caller-supplied `referenceDoc` wins.
-  const refDoc = opts.referenceDoc ?? await getDefaultReferenceDoc();
+  // Pandoc's docx writer can't set section properties (columns,
+  // page-level font/size) directly; they're read from the
+  // `--reference-doc` template. Generate one per-style by taking
+  // pandoc's default reference.docx and patching word/document.xml
+  // (cols) + word/styles.xml (font + size). Cached on disk under a
+  // style-specific filename so subsequent renders with the same
+  // style skip the work. Caller-supplied `referenceDoc` wins.
+  const refDoc = opts.referenceDoc ?? await getDefaultReferenceDoc(opts.style);
   args.push(`--reference-doc=${refDoc}`);
 
   execSync(`pandoc ${args.map((a) => `'${a}'`).join(' ')}`, {
@@ -214,38 +227,118 @@ async function pandocToDocx(
   return buf;
 }
 
-// Lazy-cached reference.docx with two-column body section.
-let cachedReferenceDoc: string | null = null;
+// Lazy-cached reference.docx, keyed by the style fields we apply to
+// it. Different `style:` blocks produce different cache files so a
+// `font: Garamond` render and a `font: Helvetica` render don't fight
+// over the same cached doc.
+const referenceCache = new Map<string, string>();
 
-async function getDefaultReferenceDoc(): Promise<string> {
-  if (cachedReferenceDoc && fs.existsSync(cachedReferenceDoc)) return cachedReferenceDoc;
+async function getDefaultReferenceDoc(
+  style: DocStyle = {},
+): Promise<string> {
+  const key = JSON.stringify({ font: style.font, size: style.size, columns: style.columns ?? 2 });
+  const cached = referenceCache.get(key);
+  if (cached && fs.existsSync(cached)) return cached;
 
-  const out = path.join(os.tmpdir(), 'paperese-reference-2col.docx');
+  const fname = `paperese-ref-${Buffer.from(key).toString('base64url').slice(0, 12)}.docx`;
+  const out = path.join(os.tmpdir(), fname);
 
   const defaultBuf = execSync('pandoc --print-default-data-file=reference.docx', {
     encoding: 'buffer',
   }) as unknown as Buffer;
 
-  // jszip is a transitive dep of any docx workflow we run; load it
-  // dynamically so paperese's main module graph doesn't pin it.
-  const { default: JSZip } = await import('jszip') as { default: typeof import('jszip') };
   const zip = await JSZip.loadAsync(defaultBuf);
 
-  const f = zip.file('word/document.xml');
-  if (!f) throw new Error('pandoc reference.docx is missing word/document.xml');
-  let xml = await f.async('text');
+  // — document.xml: section properties (column count) ——————————
+  const docFile = zip.file('word/document.xml');
+  if (!docFile) throw new Error('pandoc reference.docx is missing word/document.xml');
+  let docXml = await docFile.async('text');
 
-  // Replace any existing <w:cols/> with the two-column form, or
-  // inject one before the closing </w:sectPr> if none is present.
-  if (/<w:cols\b[^/]*\/>/.test(xml)) {
-    xml = xml.replace(/<w:cols\b[^/]*\/>/, '<w:cols w:num="2" w:space="720"/>');
+  const numCols = typeof style.columns === 'number'
+    ? style.columns
+    : (style.columns?.count ?? 2);
+  const colsTag = `<w:cols w:num="${numCols}" w:space="720"/>`;
+  if (/<w:cols\b[^/]*\/>/.test(docXml)) {
+    docXml = docXml.replace(/<w:cols\b[^/]*\/>/, colsTag);
   } else {
-    xml = xml.replace(/<\/w:sectPr>/, '<w:cols w:num="2" w:space="720"/></w:sectPr>');
+    docXml = docXml.replace(/<\/w:sectPr>/, `${colsTag}</w:sectPr>`);
   }
-  zip.file('word/document.xml', xml);
+  zip.file('word/document.xml', docXml);
+
+  // — styles.xml: font family + body size ——————————————————————
+  // The "Normal" style is the cascade root; setting font + sz here
+  // propagates to every paragraph that doesn't override.
+  if (style.font || style.size) {
+    const stylesFile = zip.file('word/styles.xml');
+    if (stylesFile) {
+      let stylesXml = await stylesFile.async('text');
+      stylesXml = patchNormalStyle(stylesXml, style);
+      zip.file('word/styles.xml', stylesXml);
+    }
+  }
 
   const buf = await zip.generateAsync({ type: 'nodebuffer' });
   fs.writeFileSync(out, buf);
-  cachedReferenceDoc = out;
+  referenceCache.set(key, out);
   return out;
+}
+
+/** Patch the Normal style's <w:rPr> (run properties) and <w:pPr>
+ *  (paragraph properties) so the requested font + size become the
+ *  cascade root. docx font sizes are in half-points (so 11pt = 22). */
+function patchNormalStyle(
+  stylesXml: string,
+  style: DocStyle,
+): string {
+  // Build the rFonts + sz fragments to inject. ascii / hAnsi / cs /
+  // eastAsia all set so the font wins on every script class.
+  const fontFrag = style.font
+    ? `<w:rFonts w:ascii="${escapeXml(style.font)}" w:hAnsi="${escapeXml(style.font)}" w:cs="${escapeXml(style.font)}" w:eastAsia="${escapeXml(style.font)}"/>`
+    : '';
+  const halfPt = style.size ? Math.round(style.size * 2) : null;
+  const szFrag = halfPt !== null
+    ? `<w:sz w:val="${halfPt}"/><w:szCs w:val="${halfPt}"/>`
+    : '';
+  const inject = `${fontFrag}${szFrag}`;
+  if (!inject) return stylesXml;
+
+  // Find the Normal style's run properties block and replace it.
+  // Pandoc's reference.docx has `<w:style w:styleId="Normal" ...>`
+  // with a `<w:rPr>...</w:rPr>` inside. Replace the rFonts and sz
+  // children if present, otherwise inject before the closing tag.
+  return stylesXml.replace(
+    /(<w:style\b[^>]*\bw:styleId="Normal"[\s\S]*?<w:rPr>)([\s\S]*?)(<\/w:rPr>)/,
+    (_full, open: string, inner: string, close: string) => {
+      let body = inner;
+      if (style.font) {
+        if (/<w:rFonts\b[^/]*\/>/.test(body)) {
+          body = body.replace(/<w:rFonts\b[^/]*\/>/, fontFrag);
+        } else {
+          body = fontFrag + body;
+        }
+      }
+      if (halfPt !== null) {
+        if (/<w:sz\b[^/]*\/>/.test(body)) {
+          body = body.replace(/<w:sz\b[^/]*\/>/, `<w:sz w:val="${halfPt}"/>`);
+        } else {
+          body += `<w:sz w:val="${halfPt}"/>`;
+        }
+        if (/<w:szCs\b[^/]*\/>/.test(body)) {
+          body = body.replace(/<w:szCs\b[^/]*\/>/, `<w:szCs w:val="${halfPt}"/>`);
+        } else {
+          body += `<w:szCs w:val="${halfPt}"/>`;
+        }
+      }
+      return open + body + close;
+    },
+  );
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }

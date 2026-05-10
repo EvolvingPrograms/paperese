@@ -16,3 +16,9 @@ plugin.zip
 # Working files
 .DS_Store
 ~$*
+
+# CLI smoke-test artifacts
+paper.tex
+smoke.tex
+*.tmp.tex
+*.tmp.docx

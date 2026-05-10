@@ -1,6 +1,7 @@
 // Front-matter shape paperese reads. Extend as templates grow.
 
 import type { FrontMatter as MarkdslFrontMatter } from 'markdsl';
+import type { DocStyle } from 'markdsl/docx';
 
 export interface Author {
   name: string;
@@ -29,6 +30,11 @@ export interface TexFrontMatter extends MarkdslFrontMatter {
   bibliography?: string;
   /** Output path for the rendered .tex file. */
   output?: string;
+  /** Typography overrides — font family + sizes (and any other
+   *  fields markdsl's DocStyle exposes). Applied to both the .tex
+   *  and .docx render paths so a single source produces the same
+   *  look regardless of output format. */
+  style?: DocStyle;
 }
 
 /** A paperese template: takes the parsed front-matter + the

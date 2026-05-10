@@ -15,7 +15,9 @@ describe('arxiv-two-column template', () => {
   const tex = renderTex(SRC);
 
   test('opens with twocolumn article class + arxiv preamble', () => {
-    expect(tex).toContain('\\documentclass[twocolumn,switch]{article}');
+    // The body size (default 11pt) rides as a class option;
+    // article + twocolumn,switch are stable across style configs.
+    expect(tex).toMatch(/\\documentclass\[twocolumn,switch,\d+pt\]\{(article|extarticle)\}/);
     expect(tex).toContain('\\usepackage{preprint}');
     expect(tex).toContain('\\usepackage[numbers,square]{natbib}');
   });

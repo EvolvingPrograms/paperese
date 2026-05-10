@@ -80,12 +80,59 @@ function resolveAffiliations(authors: Author[], declared?: Affiliation[]): {
   return { authors: rewritten, affiliations: out };
 }
 
+/** Map a front-matter font-family name to a LaTeX font setup
+ *  fragment. Common Google / OS fonts route through their established
+ *  pdflatex packages; anything unrecognized falls through to a
+ *  fontspec line that requires xelatex/lualatex to compile. */
+function fontPackageFor(family: string | undefined): string {
+  if (!family) return '';
+  const f = family.trim().toLowerCase();
+  // pdflatex-friendly families
+  if (f === 'times' || f === 'times new roman') {
+    return '\\usepackage{mathptmx}';
+  }
+  if (f === 'palatino' || f === 'pagella') {
+    return '\\usepackage{mathpazo}';
+  }
+  if (f === 'helvetica' || f === 'arial') {
+    return '\\usepackage{helvet}\n\\renewcommand{\\familydefault}{\\sfdefault}';
+  }
+  if (f === 'courier' || f === 'monospace') {
+    return '\\usepackage{courier}\n\\renewcommand{\\familydefault}{\\ttdefault}';
+  }
+  if (f === 'libertine' || f === 'linux libertine') {
+    return '\\usepackage{libertine}';
+  }
+  if (f === 'utopia' || f === 'fourier') {
+    return '\\usepackage{fourier}';
+  }
+  // fontspec fallback — needs xelatex/lualatex. Authors choosing a
+  // bundled-font family (EB Garamond, Crimson Pro, etc.) get this.
+  return `% ${family} via fontspec — compile with xelatex or lualatex
+\\usepackage{fontspec}
+\\setmainfont{${family}}`;
+}
+
+/** Pick a documentclass option for the body font size. 10/11/12pt
+ *  fall through to the standard article class; other integer sizes
+ *  use extarticle which supports 8/9/14/17/20pt. Defaults to 11pt
+ *  (paperese house default — slightly larger than upstream). */
+function documentClassSize(size: number | undefined): { className: string; sizeOpt: string } {
+  const s = size ?? 11;
+  if ([10, 11, 12].includes(s)) return { className: 'article', sizeOpt: `${s}pt` };
+  if ([8, 9, 14, 17, 20].includes(s)) return { className: 'extarticle', sizeOpt: `${s}pt` };
+  // Off-grid: use extarticle's nearest legal step + an explicit
+  // \fontsize override later.
+  return { className: 'extarticle', sizeOpt: '12pt' };
+}
+
 export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
   const title = meta.title ?? 'Untitled';
   const declaredAuthors = (meta.authors ?? []) as Author[];
   const { authors, affiliations } = resolveAffiliations(declaredAuthors, meta.affiliations);
   const keywords = meta.keywords ?? [];
   const abstractText = abstract ?? meta.abstract;
+  const style = meta.style ?? {};
 
   const authorTex = authors.length ? authorBlock(authors, affiliations) : '';
   const abstractTex = abstractText
@@ -98,7 +145,20 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
     ? `\\bibliography{${meta.bibliography.replace(/\.bib$/, '')}}`
     : '';
 
-  return `\\documentclass[twocolumn,switch]{article}
+  const { className, sizeOpt } = documentClassSize(style.size);
+  const fontTex = fontPackageFor(style.font);
+  // For sizes outside the 8/9/10/11/12/14/17/20 grid, set the body
+  // baseline explicitly. \fontsize{N}{1.2N} = N-pt text on 1.2N-pt
+  // leading (Word's default ratio).
+  const offGridSize = style.size && ![8, 9, 10, 11, 12, 14, 17, 20].includes(style.size)
+    ? `\\AtBeginDocument{\\fontsize{${style.size}}{${(style.size * 1.2).toFixed(0)}}\\selectfont}`
+    : '';
+  const headingSizes = [
+    style.h1_size ? `\\titleformat*{\\section}{\\fontsize{${style.h1_size}}{${(style.h1_size * 1.2).toFixed(0)}}\\bfseries}` : '',
+    style.h2_size ? `\\titleformat*{\\subsection}{\\fontsize{${style.h2_size}}{${(style.h2_size * 1.2).toFixed(0)}}\\bfseries}` : '',
+  ].filter(Boolean).join('\n');
+
+  return `\\documentclass[twocolumn,switch,${sizeOpt}]{${className}}
 \\usepackage{preprint}
 \\usepackage{hyperref}
 \\usepackage[numbers,square]{natbib}
@@ -114,6 +174,9 @@ export const arxivTwoColumn: TexTemplate = ({ meta, body, abstract }) => {
 \\usepackage{lipsum}
 \\usepackage{titlesec}
 \\usepackage{tikz}
+${fontTex}
+${offGridSize}
+${headingSizes}
 
 % Green ORCID iD circle, ported from the upstream arxiv_two_column
 % template. Used by the author block when a front-matter \`orcid:\`
