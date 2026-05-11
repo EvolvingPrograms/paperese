@@ -93,7 +93,7 @@ export function renderTex(srcText: string, opts: RenderTexOptions = {}): string 
     // Plant any bundled assets the template references next to the
     // .tex so `pdflatex paper.tex` picks them up via plain
     // `\includegraphics{<name>}` without absolute paths.
-    copyAssetsTo(path.dirname(output), ['orcid.png']);
+    copyAssetsTo(path.dirname(output), ['preprint.sty']);
   }
   return tex;
 }

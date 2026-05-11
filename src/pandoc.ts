@@ -45,7 +45,7 @@ export interface RunPandocLatexOpts {
  *  `pandoc` binary. Returns just the body LaTeX — no preamble, no
  *  `\begin{document}` — so it can be spliced into a template. */
 export function runPandocLatex(body: string, opts: RunPandocLatexOpts = {}): string {
-  const args = ['--from', PANDOC_FROM, '-t', 'latex', '--wrap=preserve'];
+  const args = ['--from', PANDOC_FROM, '-t', 'latex', '--wrap=preserve', '--syntax-highlighting=none'];
   if (opts.bibFile) {
     // natbib: leaves \citep{} / \citet{} in the output. The
     // template's \bibliography{<file>} closes the loop.
