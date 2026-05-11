@@ -277,6 +277,16 @@ ${headingSizes}
 \\def\\verbatim@font{\\normalfont\\ttfamily\\scriptsize}
 \\makeatother
 
+% Give tabular rows more vertical breathing room. Booktabs tables
+% without rules between rows compress visually in narrow two-column
+% layouts. \\arraystretch alone only helps when rows are tall —
+% adjacent short rows still butt up against each other. \\extrarowheight
+% (from the array package) adds a fixed pad ABOVE every row, so even
+% single-line neighbours get clear separation. Combined with a small
+% stretch for multi-line rows.
+\\renewcommand{\\arraystretch}{1.15}
+\\setlength{\\extrarowheight}{8pt}
+
 % Pandoc helpers — \\tightlist is emitted on collapsed itemize/enumerate
 % blocks; \\passthrough wraps inline code with smart quotes preserved.
 \\providecommand{\\tightlist}{\\setlength{\\itemsep}{0pt}\\setlength{\\parskip}{0pt}}
