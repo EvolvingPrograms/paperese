@@ -21,15 +21,70 @@
 // the firsthead/head/lastfoot directives are dropped — they're
 // pagination machinery longtable needs, table+tabular doesn't.
 
-// colSpec allows one level of nested braces so pandoc's `{@{}llll@{}}` parses
-// as a single group rather than terminating at the inner `}`.
-const LONGTABLE_RE = /\\begin\{longtable\}(\[[^\]]*\])?(\{(?:[^{}]|\{[^{}]*\})*\})\s*([\s\S]*?)\\end\{longtable\}/g;
+const BEGIN = '\\begin{longtable}';
+const END = '\\end{longtable}';
+
+// Parse a balanced `{...}` group starting at `tex[start]` (which must be `{`).
+// Returns the substring including the braces and the index just past it. Returns
+// null if the braces don't balance. Handles arbitrary nesting — pandoc emits
+// column specs like `p{(\linewidth - 6\tabcolsep) * \real{0.2500}}` with deep
+// nesting that a fixed-depth regex can't capture.
+function readBalancedBraces(tex: string, start: number): { text: string; end: number } | null {
+  if (tex[start] !== '{') return null;
+  let depth = 0;
+  for (let i = start; i < tex.length; i++) {
+    const c = tex[i];
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) return { text: tex.slice(start, i + 1), end: i + 1 };
+    }
+  }
+  return null;
+}
 
 /** Rewrite every `\\begin{longtable}…\\end{longtable}` block in a
  *  pandoc-emitted LaTeX fragment to a column-fitting
  *  `\\begin{table}…\\begin{tabular}…\\end{tabular}\\end{table}` pair. */
 export function longtableToTable(tex: string): string {
-  return tex.replace(LONGTABLE_RE, (_full, _opt: string | undefined, colSpec: string, body: string) => {
+  let out = '';
+  let cursor = 0;
+  while (cursor < tex.length) {
+    const beginIdx = tex.indexOf(BEGIN, cursor);
+    if (beginIdx === -1) {
+      out += tex.slice(cursor);
+      break;
+    }
+    out += tex.slice(cursor, beginIdx);
+    let i = beginIdx + BEGIN.length;
+
+    // Optional `[...]` placement argument.
+    if (tex[i] === '[') {
+      const close = tex.indexOf(']', i);
+      if (close === -1) { out += tex.slice(beginIdx); break; }
+      i = close + 1;
+    }
+
+    // Balanced `{colSpec}` — may contain arbitrarily nested braces.
+    const spec = readBalancedBraces(tex, i);
+    if (!spec) { out += tex.slice(beginIdx); break; }
+    const colSpec = spec.text;
+    i = spec.end;
+
+    // Skip leading whitespace before body.
+    while (i < tex.length && /\s/.test(tex[i]!)) i++;
+
+    const endIdx = tex.indexOf(END, i);
+    if (endIdx === -1) { out += tex.slice(beginIdx); break; }
+    let body = tex.slice(i, endIdx);
+    cursor = endIdx + END.length;
+
+    out += rewriteLongtable(colSpec, body);
+  }
+  return out;
+}
+
+function rewriteLongtable(colSpec: string, body: string): string {
     // Pull the optional \caption{...}\tabularnewline that pandoc
     // emits at the top of the longtable body and hoist it above
     // the tabular so it labels the float.
@@ -66,5 +121,4 @@ export function longtableToTable(tex: string): string {
     }
 
     return `\\begin{table}[t]\n\\centering\n${caption}\n\\begin{tabular}${colSpec}${body}\\end{tabular}\n\\end{table}`;
-  });
 }

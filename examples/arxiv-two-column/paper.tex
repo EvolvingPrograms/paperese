@@ -1,3 +1,4 @@
+% !TEX program = xelatex
 \documentclass[twocolumn,switch,10pt]{article}
 \usepackage{preprint}
 \SetBgContents{}
@@ -9,8 +10,20 @@
 \raggedbottom
 \usepackage{hyperref}
 \usepackage[numbers,square]{natbib}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+% Pick a Unicode-complete monospace at compile time — fontspec
+% checks each candidate and falls through if it isn't installed.
+% DejaVu Sans Mono is the broadest match (full block-drawing /
+% box-drawing / geometric range); Menlo is the macOS default;
+% Liberation Mono is the standard Linux substitute. Latin
+% Modern Mono (TeX Live default) is the last-resort baseline.
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\IfFontExistsTF{Menlo}
+    {\setmonofont{Menlo}}
+    {\IfFontExistsTF{Liberation Mono}
+      {\setmonofont{Liberation Mono}}
+      {}}}
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -20,61 +33,6 @@
 \usepackage{lineno}
 \usepackage{lipsum}
 \usepackage{titlesec}
-% Unicode safety net for pdflatex with T1 encoding. Most prose
-% Unicode passes through inputenc fine; the typical breakage is
-% Unicode block-drawing / box-drawing / geometric shapes that
-% appear in code samples or ASCII-art figures (e.g. terminal
-% output captured into a paper). Map them to printable substitutes
-% so pdflatex doesn't throw a "Unicode character" error. Authors
-% who need full Unicode fidelity should compile with xelatex /
-% lualatex (\setmainfont via fontspec) instead.
-\usepackage{textcomp}
-\usepackage{newunicodechar}
-\newunicodechar{█}{\rule{0.6em}{1.2ex}}
-\newunicodechar{▓}{\rule{0.6em}{1.2ex}}
-\newunicodechar{▒}{\rule{0.6em}{1.2ex}}
-\newunicodechar{░}{\rule{0.6em}{1.2ex}}
-\newunicodechar{▀}{\rule[0.5ex]{0.6em}{0.7ex}}
-\newunicodechar{▄}{\rule{0.6em}{0.7ex}}
-\newunicodechar{─}{\textemdash}
-\newunicodechar{│}{\textbar}
-\newunicodechar{┌}{+}
-\newunicodechar{┐}{+}
-\newunicodechar{└}{+}
-\newunicodechar{┘}{+}
-\newunicodechar{├}{+}
-\newunicodechar{┤}{+}
-\newunicodechar{┬}{+}
-\newunicodechar{┴}{+}
-\newunicodechar{┼}{+}
-\newunicodechar{═}{=}
-\newunicodechar{║}{\textbar}
-\newunicodechar{╔}{+}
-\newunicodechar{╗}{+}
-\newunicodechar{╚}{+}
-\newunicodechar{╝}{+}
-\newunicodechar{■}{\rule{0.6em}{0.6em}}
-\newunicodechar{□}{\fbox{\phantom{x}}}
-\newunicodechar{●}{\textbullet}
-\newunicodechar{○}{\textopenbullet}
-\newunicodechar{▪}{\textbullet}
-\newunicodechar{▶}{\textgreater}
-\newunicodechar{◀}{\textless}
-\newunicodechar{▲}{\^{}}
-\newunicodechar{▼}{v}
-\newunicodechar{✓}{\checkmark}
-\newunicodechar{✗}{\texttimes}
-\newunicodechar{→}{\textrightarrow}
-\newunicodechar{←}{\textleftarrow}
-\newunicodechar{↑}{\textuparrow}
-\newunicodechar{↓}{\textdownarrow}
-\newunicodechar{≈}{\ensuremath{\approx}}
-\newunicodechar{≠}{\ensuremath{\neq}}
-\newunicodechar{≤}{\ensuremath{\leq}}
-\newunicodechar{≥}{\ensuremath{\geq}}
-\newunicodechar{±}{\ensuremath{\pm}}
-\newunicodechar{×}{\ensuremath{\times}}
-\newunicodechar{÷}{\ensuremath{\div}}
 
 
 
@@ -210,6 +168,24 @@ See Figure \ref{fig:fig1}.
 \item
   Aliquam dignissim blandit est, in dictum tortor gravida eget.
 \end{itemize}
+
+\subsection{Tables}\label{tables}
+
+See Table \ref{tab:results} for a markdown table rendering test.
+
+\begin{table}[t]
+\centering
+\caption{Results comparison across methods.\label{tab:results}}
+\begin{tabular}{@{}lrrl@{}}\toprule
+Method & Accuracy & F1 Score & Notes \\
+\midrule
+
+Baseline & 0.812 & 0.798 & Vanilla logistic regr. \\
+Ours & 0.904 & 0.891 & Proposed approach \\
+Ours+aug & 0.921 & 0.910 & With augmentation \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 \bibliography{_paperese-refs}

@@ -90,3 +90,15 @@ See Figure \ref{fig:fig1}.
 - Lorem ipsum dolor sit amet
 - consectetur adipiscing elit
 - Aliquam dignissim blandit est, in dictum tortor gravida eget.
+
+## Tables
+
+See Table \ref{tab:results} for a markdown table rendering test.
+
+| Method   | Accuracy | F1 Score | Notes                  |
+|----------|---------:|---------:|------------------------|
+| Baseline |    0.812 |    0.798 | Vanilla logistic regr. |
+| Ours     |    0.904 |    0.891 | Proposed approach      |
+| Ours+aug |    0.921 |    0.910 | With augmentation      |
+
+: Results comparison across methods.\label{tab:results}
