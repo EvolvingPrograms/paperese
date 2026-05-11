@@ -120,5 +120,11 @@ function rewriteLongtable(colSpec: string, body: string): string {
       body = body.replace(/\s*$/, '\n\\bottomrule\n');
     }
 
-    return `\\begin{table}[t]\n\\centering\n${caption}\n\\begin{tabular}${colSpec}${body}\\end{tabular}\n\\end{table}`;
+    // [H] (from the float package) pins the table where it appears in
+    // the source instead of letting LaTeX hoist it to a column top.
+    // In two-column layout, mid-paragraph hoisting splits the paragraph
+    // and the post-float text gets a fresh \parindent — readers see a
+    // word broken across the float ("fi-…nite") with the second half
+    // indented like a new paragraph.
+    return `\\begin{table}[H]\n\\centering\n${caption}\n\\begin{tabular}${colSpec}${body}\\end{tabular}\n\\end{table}`;
 }

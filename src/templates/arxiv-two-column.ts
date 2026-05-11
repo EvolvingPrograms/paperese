@@ -251,6 +251,7 @@ ${encodingTex}
 \\usepackage{amsmath,amssymb}
 \\usepackage{longtable}
 \\usepackage{array}
+\\usepackage{float}    % enables [H] placement: pin the table where it appears
 \\usepackage{lineno}
 \\usepackage{lipsum}
 \\usepackage{titlesec}

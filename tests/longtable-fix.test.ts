@@ -13,7 +13,7 @@ A & B & C & D \\\\
 \\endlastfoot
 \\end{longtable}`;
     const out = longtableToTable(input);
-    expect(out).toContain('\\begin{table}[t]');
+    expect(out).toContain('\\begin{table}[H]');
     expect(out).toContain('\\begin{tabular}{@{}llll@{}}');
     expect(out).not.toContain('longtable');
     expect(out).not.toContain('\\endhead');
