@@ -99,11 +99,11 @@ function xelatexFontspec(): string {
     '% Liberation Mono is the standard Linux substitute. Latin',
     '% Modern Mono (TeX Live default) is the last-resort baseline.',
     '\\IfFontExistsTF{DejaVu Sans Mono}',
-    '  {\\setmonofont{DejaVu Sans Mono}}',
+    '  {\\setmonofont[Scale=MatchLowercase]{DejaVu Sans Mono}}',
     '  {\\IfFontExistsTF{Menlo}',
-    '    {\\setmonofont{Menlo}}',
+    '    {\\setmonofont[Scale=MatchLowercase]{Menlo}}',
     '    {\\IfFontExistsTF{Liberation Mono}',
-    '      {\\setmonofont{Liberation Mono}}',
+    '      {\\setmonofont[Scale=MatchLowercase]{Liberation Mono}}',
     '      {}}}',
   ].join('\n');
 }
@@ -269,6 +269,13 @@ ${headingSizes}
 \\titlespacing\\section{0pt}{12pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
 \\titlespacing\\subsection{0pt}{10pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
 \\titlespacing\\subsubsection{0pt}{8pt plus 3pt minus 3pt}{1pt plus 1pt minus 1pt}
+
+% Shrink fenced code blocks. Two-column layout has narrow columns, so
+% verbatim at body size overflows easily — \\scriptsize gives ~80 cols
+% of code per column without compromising readability of prose.
+\\makeatletter
+\\def\\verbatim@font{\\normalfont\\ttfamily\\scriptsize}
+\\makeatother
 
 % Pandoc helpers — \\tightlist is emitted on collapsed itemize/enumerate
 % blocks; \\passthrough wraps inline code with smart quotes preserved.
